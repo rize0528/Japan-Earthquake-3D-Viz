@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>3D Earthquake Visualization</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #000;
+    }
+    #container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+    #canvas {
+      display: block;
+    }
+    .ui-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      z-index: 1000;
+    }
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 18px;
+      z-index: 1001;
+    }
+    .info-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      z-index: 1000;
+      min-width: 200px;
+    }
+    .controls-help {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <canvas id="canvas"></canvas>
+    
+    <div class="ui-overlay">
+      <div><strong data-i18n-key="viz_title">3D Earthquake Visualization</strong></div>
+      <div id="dataCount" data-i18n-key="loading">Loading...</div>
+    </div>
+    
+    <div class="info-panel">
+      <div><strong data-i18n-key="legend">Legend:</strong></div>
+      <div style="margin-top: 5px;">
+        <div><span style="color: #ff0000;">●</span> <span data-i18n-key="recent_earthquakes">Recent (0-12h)</span></div>
+        <div><span style="color: #ffff00;">●</span> <span data-i18n-key="older_earthquakes">Older (12h+)</span></div>
+      </div>
+      <div style="margin-top: 10px;">
+        <div><strong data-i18n-key="sphere_size_legend">Sphere Size:</strong></div>
+        <div><span data-i18n-key="magnitude_proportional">Proportional to magnitude</span></div>
+      </div>
+    </div>
+    
+    <div class="controls-help">
+      <div><strong data-i18n-key="controls">Controls:</strong></div>
+      <div data-i18n-key="mouse_rotate">Mouse: Rotate view</div>
+      <div data-i18n-key="mouse_zoom">Scroll: Zoom in/out</div>
+      <div data-i18n-key="mouse_pan">Right-click + drag: Pan</div>
+    </div>
+    
+    <div class="loading" id="loadingDiv" data-i18n-key="loading_3d">Loading 3D scene...</div>
+  </div>
+
+  <script src="../../../node_modules/three/build/three.min.js"></script>
+  <script src="./js/i18n.js"></script>
+  <script src="./js/progress.js"></script>
+  <script>
+    let scene, camera, renderer, controls;
+    let earthquakeSpheres = [];
+    let currentData = [];
+    let sphereScale = 1;
+    let sphereAlpha = 0.7;
+    let currentLanguage = 'ja';
+    let terrainMesh = null;
+    let terrainData = null;
+
+    function init() {
+      const container = document.getElementById('container');
+      const canvas = document.getElementById('canvas');
+      
+      // Scene setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x001122);
+      
+      // Camera setup
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+      camera.position.set(0, 100, 200);
+      
+      // Renderer setup
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+      scene.add(ambientLight);
+      
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(100, 100, 50);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.mapSize.width = 2048;
+      directionalLight.shadow.mapSize.height = 2048;
+      scene.add(directionalLight);
+      
+      // Controls (OrbitControls alternative using basic mouse controls)
+      setupControls();
+      
+      // Create ground plane
+      createGroundPlane();
+      
+      // Hide loading
+      document.getElementById('loadingDiv').style.display = 'none';
+      
+      // Start render loop
+      animate();
+    }
+
+    function setupControls() {
+      let mouseDown = false;
+      let mouseButton = 0;
+      let mouseX = 0;
+      let mouseY = 0;
+      let targetRotationX = 0;
+      let targetRotationY = 0;
+      let targetDistance = 200;
+      
+      const canvas = document.getElementById('canvas');
+      
+      canvas.addEventListener('mousedown', (event) => {
+        mouseDown = true;
+        mouseButton = event.button;
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+      });
+      
+      canvas.addEventListener('mouseup', () => {
+        mouseDown = false;
+      });
+      
+      canvas.addEventListener('mousemove', (event) => {
+        if (!mouseDown) return;
+        
+        const deltaX = event.clientX - mouseX;
+        const deltaY = event.clientY - mouseY;
+        
+        if (mouseButton === 0) { // Left click - rotate
+          targetRotationY += deltaX * 0.01;
+          targetRotationX += deltaY * 0.01;
+          targetRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, targetRotationX));
+        } else if (mouseButton === 2) { // Right click - pan
+          camera.position.x -= deltaX * 0.5;
+          camera.position.y += deltaY * 0.5;
+        }
+        
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+        
+        updateCameraPosition();
+      });
+      
+      canvas.addEventListener('wheel', (event) => {
+        targetDistance += event.deltaY * 0.1;
+        targetDistance = Math.max(10, Math.min(1000, targetDistance));
+        updateCameraPosition();
+      });
+      
+      canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+      });
+      
+      function updateCameraPosition() {
+        const x = targetDistance * Math.sin(targetRotationY) * Math.cos(targetRotationX);
+        const y = targetDistance * Math.sin(targetRotationX);
+        const z = targetDistance * Math.cos(targetRotationY) * Math.cos(targetRotationX);
+        
+        camera.position.set(x, y, z);
+        camera.lookAt(0, 0, 0);
+      }
+    }
+
+    function createGroundPlane() {
+      const geometry = new THREE.PlaneGeometry(500, 500, 32, 32);
+      const material = new THREE.MeshLambertMaterial({ 
+        color: 0x228833,
+        transparent: true,
+        opacity: 0.3,
+        wireframe: true
+      });
+      
+      const plane = new THREE.Mesh(geometry, material);
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.y = -50;
+      plane.receiveShadow = true;
+      scene.add(plane);
+    }
+
+    function clearEarthquakeSpheres() {
+      earthquakeSpheres.forEach(sphere => {
+        scene.remove(sphere);
+        if (sphere.geometry) sphere.geometry.dispose();
+        if (sphere.material) sphere.material.dispose();
+      });
+      earthquakeSpheres = [];
+    }
+
+    function getAgeColor(datetime) {
+      const now = new Date();
+      const eventTime = new Date(datetime);
+      const ageHours = (now - eventTime) / (1000 * 60 * 60);
+      
+      if (ageHours < 12) {
+        return new THREE.Color(1, 0, 0); // Red for recent
+      } else {
+        return new THREE.Color(1, 1, 0); // Yellow for older
+      }
+    }
+
+    function createEarthquakeSpheres(data) {
+      clearEarthquakeSpheres();
+      
+      if (!data || data.length === 0) {
+        document.getElementById('dataCount').textContent = 'No earthquake data';
+        return;
+      }
+      
+      // Find bounds for positioning
+      const bounds = {
+        minLat: Math.min(...data.map(eq => eq.latitude)),
+        maxLat: Math.max(...data.map(eq => eq.latitude)),
+        minLon: Math.min(...data.map(eq => eq.longitude)),
+        maxLon: Math.max(...data.map(eq => eq.longitude))
+      };
+      
+      const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+      const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+      
+      // Request terrain data for this region
+      const terrainBounds = {
+        lat_min: bounds.minLat - 0.1,
+        lat_max: bounds.maxLat + 0.1,
+        lon_min: bounds.minLon - 0.1,
+        lon_max: bounds.maxLon + 0.1
+      };
+      window.api.send('get-terrain-data', terrainBounds);
+      
+      data.forEach(eq => {
+        // Convert lat/lon to world coordinates
+        const x = (eq.longitude - centerLon) * 100; // Scale factor
+        const z = (eq.latitude - centerLat) * 100;
+        const y = -eq.depth * 0.1; // Depth below surface
+        
+        // Sphere size based on magnitude
+        const radius = Math.max(0.5, eq.magnitude * 0.5) * sphereScale;
+        
+        const geometry = new THREE.SphereGeometry(radius, 16, 16);
+        const material = new THREE.MeshPhongMaterial({
+          color: getAgeColor(eq.datetime),
+          transparent: true,
+          opacity: sphereAlpha
+        });
+        
+        const sphere = new THREE.Mesh(geometry, material);
+        sphere.position.set(x, y, z);
+        sphere.castShadow = true;
+        sphere.userData = eq; // Store earthquake data
+        
+        scene.add(sphere);
+        earthquakeSpheres.push(sphere);
+      });
+      
+      // Update UI
+      document.getElementById('dataCount').textContent = `${data.length} earthquakes displayed`;
+    }
+
+    function updateSphereScale(scale) {
+      sphereScale = scale;
+      earthquakeSpheres.forEach(sphere => {
+        const eq = sphere.userData;
+        const newRadius = Math.max(0.5, eq.magnitude * 0.5) * sphereScale;
+        sphere.scale.set(scale, scale, scale);
+      });
+    }
+
+    function updateSphereAlpha(alpha) {
+      sphereAlpha = alpha;
+      earthquakeSpheres.forEach(sphere => {
+        sphere.material.opacity = alpha;
+      });
+    }
+
+    function createTerrainMesh(terrainData) {
+      // Remove existing terrain
+      if (terrainMesh) {
+        scene.remove(terrainMesh);
+        if (terrainMesh.geometry) terrainMesh.geometry.dispose();
+        if (terrainMesh.material) terrainMesh.material.dispose();
+      }
+      
+      if (!terrainData || !terrainData.tiles || terrainData.tiles.length === 0) {
+        return;
+      }
+      
+      const { bounds } = terrainData;
+      const resolution = 50;
+      const scale = 1000;
+      
+      // Create terrain geometry
+      const geometry = new THREE.PlaneGeometry(
+        (bounds.lon_max - bounds.lon_min) * scale,
+        (bounds.lat_max - bounds.lat_min) * scale,
+        resolution - 1,
+        resolution - 1
+      );
+      
+      const positions = geometry.attributes.position.array;
+      
+      // Update vertex heights based on terrain data
+      for (let i = 0; i < positions.length; i += 3) {
+        const x = positions[i];
+        const z = positions[i + 2];
+        
+        // Convert back to lat/lon
+        const lon = bounds.lon_min + (x / scale + (bounds.lon_max - bounds.lon_min) / 2);
+        const lat = bounds.lat_min + (z / scale + (bounds.lat_max - bounds.lat_min) / 2);
+        
+        // Get elevation from terrain data
+        const elevation = interpolateElevation(lat, lon, terrainData);
+        positions[i + 1] = elevation * 0.01; // Scale down elevation
+      }
+      
+      geometry.attributes.position.needsUpdate = true;
+      geometry.computeVertexNormals();
+      
+      // Create material
+      const material = new THREE.MeshLambertMaterial({
+        color: 0x567d46,
+        transparent: true,
+        opacity: 0.8,
+        wireframe: false
+      });
+      
+      terrainMesh = new THREE.Mesh(geometry, material);
+      terrainMesh.rotation.x = -Math.PI / 2;
+      terrainMesh.position.y = -10;
+      terrainMesh.receiveShadow = true;
+      
+      scene.add(terrainMesh);
+      console.log('Terrain mesh created');
+    }
+    
+    function interpolateElevation(lat, lon, terrainData) {
+      if (!terrainData || !terrainData.tiles) return 0;
+      
+      // Find the tile containing this point
+      for (const tile of terrainData.tiles) {
+        const { bounds, elevations, size } = tile;
+        
+        if (lat >= bounds.lat_min && lat <= bounds.lat_max &&
+            lon >= bounds.lon_min && lon <= bounds.lon_max) {
+          
+          // Convert to tile-local coordinates
+          const localX = (lon - bounds.lon_min) / (bounds.lon_max - bounds.lon_min);
+          const localY = (bounds.lat_max - lat) / (bounds.lat_max - bounds.lat_min);
+          
+          // Get grid indices
+          const gridX = Math.floor(localX * (size - 1));
+          const gridY = Math.floor(localY * (size - 1));
+          
+          // Bounds check
+          if (gridX >= 0 && gridX < size && gridY >= 0 && gridY < size) {
+            const index = gridY * size + gridX;
+            return elevations[index] || 0;
+          }
+        }
+      }
+      
+      return 0;
+    }
+
+    function updateLanguage(language) {
+      currentLanguage = language;
+      document.querySelectorAll('[data-i18n-key]').forEach(element => {
+        const key = element.getAttribute('data-i18n-key');
+        if (translations[language] && translations[language][key]) {
+          element.textContent = translations[language][key];
+        }
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      // Rotate spheres slowly for visual effect
+      earthquakeSpheres.forEach(sphere => {
+        sphere.rotation.y += 0.01;
+      });
+      
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // Event listeners
+    window.addEventListener('resize', onWindowResize);
+
+    // IPC listeners
+    window.api.receive('filtered-data', (data) => {
+      currentData = data;
+      createEarthquakeSpheres(data);
+    });
+
+    window.api.receive('sphere-scale', (scale) => {
+      updateSphereScale(scale);
+    });
+
+    window.api.receive('sphere-alpha', (alpha) => {
+      updateSphereAlpha(alpha);
+    });
+
+    window.api.receive('language-changed', (language) => {
+      updateLanguage(language);
+    });
+
+    window.api.receive('terrain-data', (data) => {
+      console.log('Received terrain data:', data);
+      terrainData = data;
+      createTerrainMesh(data);
+    });
+
+    window.api.receive('terrain-error', (error) => {
+      console.error('Terrain error:', error);
+    });
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeI18n();
+      init();
+    });
+  </script>
+</body>
+</html>

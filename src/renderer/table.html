@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Earthquake Data Table</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .header {
+      background-color: #007bff;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+    .table-container {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+    th {
+      background-color: #f8f9fa;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:hover {
+      background-color: #f8f9fa;
+    }
+    .magnitude {
+      font-weight: bold;
+      text-align: center;
+    }
+    .mag-low { color: #28a745; }
+    .mag-medium { color: #ffc107; }
+    .mag-high { color: #dc3545; }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #6c757d;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2 data-i18n-key="table_title">Earthquake Data</h2>
+    </div>
+    <div class="table-container">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th data-i18n-key="datetime">Date/Time</th>
+            <th data-i18n-key="latitude">Latitude</th>
+            <th data-i18n-key="longitude">Longitude</th>
+            <th data-i18n-key="depth">Depth (km)</th>
+            <th data-i18n-key="magnitude">Magnitude</th>
+            <th data-i18n-key="epicenter">Epicenter</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="6" class="loading" data-i18n-key="loading">Loading data...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="./js/i18n.js"></script>
+  <script src="./js/progress.js"></script>
+  <script>
+    let currentData = [];
+    let currentLanguage = 'ja';
+
+    function formatDateTime(dateTime) {
+      if (!dateTime) return '';
+      try {
+        const date = new Date(dateTime);
+        return date.toLocaleString();
+      } catch (error) {
+        return dateTime;
+      }
+    }
+
+    function getMagnitudeClass(magnitude) {
+      if (magnitude < 4) return 'mag-low';
+      if (magnitude < 6) return 'mag-medium';
+      return 'mag-high';
+    }
+
+    function updateTable(data) {
+      currentData = data;
+      const tbody = document.getElementById('tableBody');
+      
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty-state" data-i18n-key="no_data">No earthquake data available</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = data.map(eq => `
+        <tr>
+          <td>${formatDateTime(eq.datetime)}</td>
+          <td>${eq.latitude.toFixed(3)}</td>
+          <td>${eq.longitude.toFixed(3)}</td>
+          <td>${eq.depth}</td>
+          <td class="magnitude ${getMagnitudeClass(eq.magnitude)}">${eq.magnitude}</td>
+          <td>${currentLanguage === 'ja' ? eq.region_ja : eq.region_en}</td>
+        </tr>
+      `).join('');
+    }
+
+    function updateLanguage(language) {
+      currentLanguage = language;
+      // Update i18n texts
+      document.querySelectorAll('[data-i18n-key]').forEach(element => {
+        const key = element.getAttribute('data-i18n-key');
+        if (translations[language] && translations[language][key]) {
+          element.textContent = translations[language][key];
+        }
+      });
+      
+      // Refresh table to show correct language for region names
+      if (currentData.length > 0) {
+        updateTable(currentData);
+      }
+    }
+
+    // Listen for data updates
+    window.api.receive('filtered-data', (data) => {
+      updateTable(data);
+    });
+
+    // Listen for language changes
+    window.api.receive('language-changed', (language) => {
+      updateLanguage(language);
+    });
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeI18n();
+    });
+  </script>
+</body>
+</html>

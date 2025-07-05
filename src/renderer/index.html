@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Earthquake Visualization</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .info {
+      text-align: center;
+      color: #666;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 data-i18n-key="app_title">3D Earthquake Observation</h1>
+    <div class="info">
+      <p data-i18n-key="main_description">This application visualizes earthquake data from JMA in 3D.</p>
+      <p data-i18n-key="windows_info">Multiple windows are available for different views and controls.</p>
+    </div>
+  </div>
+
+  <script src="./js/i18n.js"></script>
+  <script src="./js/progress.js"></script>
+  <script>
+    // Initialize i18n
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeI18n();
+    });
+
+    // Listen for language changes
+    window.api.receive('language-changed', (language) => {
+      updateLanguage(language);
+    });
+  </script>
+</body>
+</html>

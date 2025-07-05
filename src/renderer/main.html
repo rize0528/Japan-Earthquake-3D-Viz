@@ -1,0 +1,3363 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>3D Earthquake Visualization</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      overflow: hidden;
+      height: 100vh;
+    }
+    
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+    
+    .header-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .lang-btn {
+      padding: 4px 8px;
+      border: 1px solid white;
+      background: transparent;
+      color: white;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .lang-btn.active {
+      background: white;
+      color: #667eea;
+    }
+    
+    /* Tab Navigation */
+    .tab-container {
+      background: white;
+      border-bottom: 1px solid #ddd;
+      padding: 0 20px;
+    }
+    
+    .tab-nav {
+      display: flex;
+      gap: 0;
+    }
+    
+    .tab-btn {
+      padding: 12px 20px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      font-weight: 500;
+      color: #666;
+      transition: all 0.2s;
+    }
+    
+    .tab-btn:hover {
+      background: #f8f9fa;
+      color: #333;
+    }
+    
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      background: #f8f9fa;
+    }
+    
+    /* Content Area */
+    .content-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    
+    .sidebar {
+      width: 320px;
+      background: white;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .main-content {
+      flex: 1;
+      background: white;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Tab Panes */
+    .tab-pane {
+      display: none !important;
+      height: 100%;
+      overflow: auto;
+    }
+    
+    .tab-pane.active {
+      display: block !important;
+    }
+    
+    /* Filter Sidebar */
+    .filter-section {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .filter-section h3 {
+      margin-bottom: 15px;
+      color: #333;
+      font-size: 16px;
+    }
+    
+    .filter-group {
+      margin-bottom: 20px;
+    }
+    
+    .filter-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .range-inputs {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .range-inputs input {
+      flex: 1;
+    }
+    
+    .range-display {
+      text-align: center;
+      margin-top: 5px;
+      color: #667eea;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .filter-btn {
+      width: 100%;
+      padding: 10px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+    
+    .filter-btn:hover {
+      background: #5a6fd8;
+    }
+    
+    .filter-btn.secondary {
+      background: #6c757d;
+      margin-top: 5px;
+    }
+    
+    .filter-btn.secondary:hover {
+      background: #545b62;
+    }
+    
+    /* Control Panel */
+    .control-section {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .control-group {
+      margin-bottom: 20px;
+    }
+    
+    .control-group h4 {
+      margin-bottom: 10px;
+      color: #555;
+      font-size: 14px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .slider-group {
+      margin-bottom: 15px;
+    }
+    
+    .slider-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .slider-group input[type="range"] {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    
+    .slider-value {
+      text-align: center;
+      color: #667eea;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+    }
+    
+    .checkbox-group label {
+      margin-bottom: 0;
+      font-size: 12px;
+    }
+    
+    /* Status Messages */
+    .status-section {
+      padding: 15px 20px;
+      background: #f8f9fa;
+      margin-top: auto;
+    }
+    
+    .status-message {
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      text-align: center;
+      display: none;
+    }
+    
+    .status-message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status-message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    /* Data Table */
+    .table-container {
+      height: 100%;
+      overflow: auto;
+      padding: 20px;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .data-table th,
+    .data-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #555;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    
+    .data-table tbody tr {
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    
+    .data-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .data-table tbody tr.selected {
+      background: #e3f2fd;
+      border-left: 4px solid #667eea;
+    }
+    
+    .data-table tbody tr.selected:hover {
+      background: #bbdefb;
+    }
+    
+    .magnitude {
+      font-weight: bold;
+      text-align: center;
+    }
+    
+    .mag-low { color: #28a745; }
+    .mag-medium { color: #ffc107; }
+    .mag-high { color: #dc3545; }
+    
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    
+    .delete-btn:hover {
+      background: #c82333;
+    }
+    
+    .delete-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+    
+    /* 3D Visualization */
+    .viz-container {
+      height: 100%;
+      position: relative;
+      background: #000;
+    }
+    
+    .viz-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      z-index: 1000;
+    }
+    
+    .viz-legend {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      z-index: 1000;
+      min-width: 200px;
+    }
+    
+    .viz-controls {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      z-index: 1000;
+    }
+    
+    /* Calendar */
+    .calendar-container {
+      padding: 20px;
+      height: 100%;
+      overflow: auto;
+    }
+    
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .month-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .nav-btn {
+      padding: 5px 10px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .calendar-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .calendar-table th,
+    .calendar-table td {
+      border: 1px solid #dee2e6;
+      text-align: center;
+      vertical-align: top;
+      width: 14.28%;
+      height: 80px;
+      position: relative;
+    }
+    
+    .calendar-table th {
+      background: #f8f9fa;
+      font-weight: bold;
+      height: 40px;
+      color: #495057;
+    }
+    
+    .calendar-table td {
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .calendar-table td:hover {
+      background: #f8f9fa;
+    }
+    
+    .day-number {
+      font-weight: bold;
+      font-size: 12px;
+      position: absolute;
+      top: 5px;
+      left: 8px;
+    }
+    
+    .earthquake-count {
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #333;
+    }
+    
+    .other-month {
+      color: #ccc;
+      background: #f8f9fa;
+    }
+    
+    .today {
+      background: #e3f2fd;
+      border: 2px solid #2196f3;
+    }
+    
+    .low-activity {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .medium-activity {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .high-activity {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .calendar-legend {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 15px;
+      font-size: 12px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .legend-color {
+      width: 20px;
+      height: 15px;
+      border-radius: 3px;
+      border: 1px solid #ddd;
+    }
+    
+    .legend-color.low-activity {
+      background-color: #fff3cd;
+    }
+    
+    .legend-color.medium-activity {
+      background-color: #f8d7da;
+    }
+    
+    .legend-color.high-activity {
+      background-color: #dc3545;
+    }
+    
+    /* Additional calendar styling */
+    .calendar-table td.other-month {
+      opacity: 0.5;
+    }
+    
+    .calendar-table td.today {
+      background-color: #e3f2fd !important;
+      font-weight: bold;
+    }
+    
+    /* Empty states */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      text-align: center;
+    }
+    
+    .empty-state h3 {
+      margin-bottom: 10px;
+      color: #333;
+    }
+    
+    /* Loading states */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #667eea;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <h1 data-i18n-key="app_title">3D Earthquake Observation</h1>
+      <div class="header-controls">
+        <button class="lang-btn active" data-language="ja">日本語</button>
+        <button class="lang-btn" data-language="en">English</button>
+      </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="tab-container">
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="overview" data-i18n-key="overview_tab">Overview</button>
+        <button class="tab-btn" data-tab="table" data-i18n-key="data_table_tab">Data Table</button>
+        <button class="tab-btn" data-tab="visualization" data-i18n-key="visualization_tab">3D View</button>
+        <button class="tab-btn" data-tab="calendar" data-i18n-key="calendar_tab">Calendar</button>
+      </nav>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <!-- Filter Section -->
+        <div class="filter-section">
+          <h3 data-i18n-key="filter_title">Filter Settings</h3>
+          
+          <div class="filter-group">
+            <label for="regionSelect" data-i18n-key="region_filter">Region Filter:</label>
+            <select id="regionSelect">
+              <option value="all" data-i18n-key="all_regions">All Regions</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label data-i18n-key="magnitude_range">Magnitude Range:</label>
+            <div class="range-inputs">
+              <input type="number" id="magMin" min="0" max="10" step="0.1" value="0" placeholder="Min">
+              <span>-</span>
+              <input type="number" id="magMax" min="0" max="10" step="0.1" value="10" placeholder="Max">
+            </div>
+            <div class="range-display" id="rangeDisplay">0.0 - 10.0</div>
+          </div>
+          
+          <button class="filter-btn" id="applyBtn" data-i18n-key="apply_filter">Apply Filter</button>
+          <button class="filter-btn secondary" id="resetBtn" data-i18n-key="reset_filter">Reset Filter</button>
+        </div>
+
+        <!-- Control Section -->
+        <div class="control-section">
+          <h3 data-i18n-key="control_title">Controls</h3>
+          
+          <div class="control-group">
+            <h4 data-i18n-key="data_controls">Data Controls</h4>
+            
+            <div class="filter-group">
+              <label for="historyRange">Historical Data Range:</label>
+              <select id="historyRange">
+                <option value="1">Last 1 day</option>
+                <option value="3">Last 3 days</option>
+                <option value="7" selected>Last 7 days</option>
+                <option value="14">Last 14 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last 1 year</option>
+              </select>
+            </div>
+            
+            <div class="button-group">
+              <button class="btn btn-primary" id="refreshBtn" data-i18n-key="refresh">Refresh</button>
+              <button class="btn btn-success" id="updateBtn" data-i18n-key="check_updates">Update</button>
+            </div>
+            <div class="button-group">
+              <button class="btn" id="clearCacheBtn" style="background: #6c757d; color: white;" title="Clear all cached data and re-fetch from JMA">Clear Cache</button>
+              <button class="btn" id="fetchHistoryBtn" style="background: #17a2b8; color: white;" title="Fetch historical data based on selected range">Fetch History</button>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="autoUpdateCheck">
+              <label for="autoUpdateCheck" data-i18n-key="auto_update">Auto-update (30 min)</label>
+            </div>
+          </div>
+          
+          <div class="control-group">
+            <h4 data-i18n-key="visual_controls">Visual Controls</h4>
+            <div class="slider-group">
+              <label for="sphereScale" data-i18n-key="sphere_size">Sphere Size:</label>
+              <input type="range" id="sphereScale" min="0.5" max="100" step="0.5" value="1">
+              <div class="slider-value" id="sphereScaleValue">1.0x</div>
+            </div>
+            <div class="slider-group">
+              <label for="sphereAlpha" data-i18n-key="sphere_transparency">Sphere Transparency:</label>
+              <input type="range" id="sphereAlpha" min="0.1" max="1" step="0.1" value="0.7">
+              <div class="slider-value" id="sphereAlphaValue">0.7</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Section -->
+        <div class="status-section">
+          <div class="status-message" id="statusMessage"></div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Overview Tab -->
+        <div class="tab-pane active" id="overview-pane">
+          <div class="empty-state">
+            <h3 data-i18n-key="welcome_title">Welcome to 3D Earthquake Visualization</h3>
+            <p data-i18n-key="welcome_description">Use the tabs above to explore earthquake data in different views.</p>
+            <p data-i18n-key="welcome_instruction">Start by checking the Data Table or 3D View tabs.</p>
+          </div>
+        </div>
+
+        <!-- Data Table Tab -->
+        <div class="tab-pane" id="table-pane">
+          <div class="table-container">
+            <table class="data-table" id="dataTable">
+              <thead>
+                <tr>
+                  <th data-i18n-key="datetime">Date/Time</th>
+                  <th data-i18n-key="latitude">Latitude</th>
+                  <th data-i18n-key="longitude">Longitude</th>
+                  <th data-i18n-key="depth">Depth (km)</th>
+                  <th data-i18n-key="magnitude">Magnitude</th>
+                  <th data-i18n-key="epicenter">Epicenter</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <tr>
+                  <td colspan="7" class="loading" data-i18n-key="loading">Loading data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3D Visualization Tab -->
+        <div class="tab-pane" id="visualization-pane">
+          <div class="viz-container">
+            <canvas id="vizCanvas"></canvas>
+            
+            <div class="viz-overlay">
+              <div><strong data-i18n-key="viz_title">3D Earthquake Visualization</strong></div>
+              <div id="dataCount" data-i18n-key="loading">Loading...</div>
+            </div>
+            
+            <div class="viz-legend">
+              <div><strong data-i18n-key="legend">Legend:</strong></div>
+              <div style="margin-top: 5px;">
+                <div><span style="color: #ff0000;">●</span> <span data-i18n-key="recent_earthquakes">Recent (0-12h)</span></div>
+                <div><span style="color: #ffff00;">●</span> <span data-i18n-key="older_earthquakes">Older (12h+)</span></div>
+              </div>
+              <div style="margin-top: 10px;">
+                <div><strong data-i18n-key="sphere_size_legend">Sphere Size:</strong></div>
+                <div><span data-i18n-key="magnitude_proportional">Proportional to magnitude</span></div>
+              </div>
+              <div style="margin-top: 10px;">
+                <div><strong>Geographic Reference:</strong></div>
+                <div style="font-size: 11px;">
+                  <div><span style="background: rgba(34,139,34,0.6); color: white; padding: 1px 4px; border-radius: 2px;">█</span> Japan Landmass</div>
+                  <div style="color: #888;">Map aligned to earthquake coordinates</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="viz-controls">
+              <div><strong data-i18n-key="controls">Controls:</strong></div>
+              <div data-i18n-key="mouse_rotate">Mouse: Rotate view</div>
+              <div data-i18n-key="mouse_zoom">Scroll: Zoom in/out</div>
+              <div data-i18n-key="mouse_pan">Right-click + drag: Pan</div>
+              <div style="margin-top: 8px; font-size: 11px; color: #888;">
+                🧭 Click navigation cube faces for orthogonal views
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Tab -->
+        <div class="tab-pane" id="calendar-pane">
+          <div class="calendar-container">
+            <div class="calendar-header">
+              <div class="nav-buttons">
+                <button class="nav-btn" id="prevBtn" data-i18n-key="previous">‹ Previous</button>
+              </div>
+              <div class="month-title" id="monthTitle"></div>
+              <div class="nav-buttons">
+                <button class="nav-btn" id="nextBtn" data-i18n-key="next">Next ›</button>
+              </div>
+            </div>
+            
+            <table class="calendar-table" id="calendarTable">
+              <thead>
+                <tr id="weekdayHeader">
+                  <th data-i18n-key="sun">Sun</th>
+                  <th data-i18n-key="mon">Mon</th>
+                  <th data-i18n-key="tue">Tue</th>
+                  <th data-i18n-key="wed">Wed</th>
+                  <th data-i18n-key="thu">Thu</th>
+                  <th data-i18n-key="fri">Fri</th>
+                  <th data-i18n-key="sat">Sat</th>
+                </tr>
+              </thead>
+              <tbody id="calendarBody">
+              </tbody>
+            </table>
+            
+            <div class="calendar-legend">
+              <div class="legend-item">
+                <div class="legend-color low-activity"></div>
+                <span data-i18n-key="low_activity">Low (1-2)</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color medium-activity"></div>
+                <span data-i18n-key="medium_activity">Medium (3-5)</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color high-activity"></div>
+                <span data-i18n-key="high_activity">High (6+)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Three.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <script>
+    console.log('🔥 Inline script test - JavaScript is working!');
+    
+    // Test basic functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🔥 DOM loaded - adding click listeners directly...');
+      
+      // Load saved settings first
+      loadSettings();
+      
+      // Add tab navigation directly
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const tabPanes = document.querySelectorAll('.tab-pane');
+      
+      console.log('Found', tabButtons.length, 'tab buttons');
+      console.log('Found', tabPanes.length, 'tab panes');
+      
+      tabButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+          const targetTab = button.getAttribute('data-tab');
+          console.log('Tab clicked:', targetTab);
+          
+          // Remove active from all buttons
+          tabButtons.forEach(function(btn) { btn.classList.remove('active'); });
+          button.classList.add('active');
+          
+          // Remove active from all panes
+          tabPanes.forEach(function(pane) { pane.classList.remove('active'); });
+          
+          // Add active to target pane
+          const targetPane = document.getElementById(targetTab + '-pane');
+          if (targetPane) {
+            targetPane.classList.add('active');
+            console.log('Successfully switched to', targetTab);
+            
+            // Initialize 3D scene when visualization tab is activated
+            if (targetTab === 'visualization' && typeof THREE !== 'undefined') {
+              setTimeout(function() {
+                init3DScene();
+              }, 100);
+            } else if (targetTab === 'calendar') {
+              // Initialize calendar when calendar tab is activated
+              setTimeout(function() {
+                initializeCalendar();
+              }, 100);
+            }
+          } else {
+            console.error('Could not find pane:', targetTab + '-pane');
+          }
+        });
+      });
+      
+      // Add language switching
+      const langButtons = document.querySelectorAll('.lang-btn');
+      langButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+          const language = button.getAttribute('data-language');
+          console.log('Language clicked:', language);
+          
+          // Update active button
+          langButtons.forEach(function(btn) { btn.classList.remove('active'); });
+          button.classList.add('active');
+          
+          // Save language setting
+          updateSetting('language', language);
+          
+          // Update place names immediately
+          if (scene) {
+            setTimeout(() => {
+              updatePlaceNameLanguage();
+            }, 50);
+          }
+          
+          // Send to main process
+          if (window.api) {
+            window.api.send('language-changed', language);
+          }
+        });
+      });
+      
+      // Add basic control functionality  
+      const refreshBtn = document.getElementById('refreshBtn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+          console.log('Refresh clicked');
+          if (window.api) {
+            // Request real data refresh from main process
+            window.api.send('refresh-view');
+            console.log('📡 Requested data refresh from main process');
+          } else {
+            // Fallback to sample data if no API
+            console.log('📊 Using sample data (no API available)');
+            generateSampleData();
+          }
+        });
+      }
+      
+      // Add update button functionality
+      const updateBtn = document.getElementById('updateBtn');
+      if (updateBtn) {
+        updateBtn.addEventListener('click', function() {
+          console.log('Update clicked');
+          if (window.api) {
+            updateBtn.disabled = true;
+            updateBtn.textContent = 'Updating...';
+            window.api.send('update-data');
+            console.log('📡 Requested data update from JMA');
+          }
+        });
+      }
+      
+      // Add clear cache button functionality
+      const clearCacheBtn = document.getElementById('clearCacheBtn');
+      if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', function() {
+          console.log('Clear cache clicked');
+          if (confirm('Are you sure you want to clear all cached earthquake data? This will remove all stored records and re-fetch from JMA.')) {
+            if (window.api) {
+              clearCacheBtn.disabled = true;
+              clearCacheBtn.textContent = 'Clearing...';
+              window.api.send('clear-cache');
+              console.log('📡 Requested cache clear');
+            }
+          }
+        });
+      }
+      
+      // Add fetch history button functionality
+      const fetchHistoryBtn = document.getElementById('fetchHistoryBtn');
+      if (fetchHistoryBtn) {
+        fetchHistoryBtn.addEventListener('click', function() {
+          const historyRange = document.getElementById('historyRange');
+          const days = parseInt(historyRange.value);
+          console.log('Fetch history clicked for', days, 'days');
+          
+          if (window.api) {
+            fetchHistoryBtn.disabled = true;
+            fetchHistoryBtn.textContent = 'Fetching...';
+            window.api.send('fetch-historical-data', days);
+            console.log('📡 Requested historical data for', days, 'days');
+          }
+        });
+      }
+      
+      // Add sphere control functionality
+      const sphereScaleSlider = document.getElementById('sphereScale');
+      const sphereAlphaSlider = document.getElementById('sphereAlpha');
+      
+      if (sphereScaleSlider) {
+        sphereScaleSlider.addEventListener('input', function() {
+          const scale = parseFloat(sphereScaleSlider.value);
+          document.getElementById('sphereScaleValue').textContent = scale.toFixed(1) + 'x';
+          console.log('🎨 Sphere scale changed to:', scale);
+          
+          // Save setting
+          updateSetting('sphereScale', scale);
+          
+          // Update sphere scales
+          if (window.earthquakeSpheres && window.earthquakeSpheres.length > 0) {
+            window.earthquakeSpheres.forEach(sphere => {
+              sphere.scale.set(scale, scale, scale);
+            });
+            console.log('✅ Updated', window.earthquakeSpheres.length, 'sphere scales');
+          } else {
+            console.log('⚠️ No earthquake spheres found to update scale');
+          }
+        });
+      }
+      
+      if (sphereAlphaSlider) {
+        sphereAlphaSlider.addEventListener('input', function() {
+          const alpha = parseFloat(sphereAlphaSlider.value);
+          document.getElementById('sphereAlphaValue').textContent = alpha.toFixed(1);
+          console.log('🎨 Sphere alpha changed to:', alpha);
+          
+          // Save setting
+          updateSetting('sphereAlpha', alpha);
+          
+          // Update sphere transparency
+          if (window.earthquakeSpheres && window.earthquakeSpheres.length > 0) {
+            window.earthquakeSpheres.forEach(sphere => {
+              sphere.material.opacity = alpha;
+            });
+            console.log('✅ Updated', window.earthquakeSpheres.length, 'sphere opacities');
+          } else {
+            console.log('⚠️ No earthquake spheres found to update alpha');
+          }
+        });
+      }
+      
+      // Setup IPC listeners for data updates
+      if (window.api) {
+        console.log('📡 Setting up IPC listeners...');
+        
+        // Listen for filtered earthquake data
+        window.api.receive('filtered-data', function(data) {
+          console.log('📊 Received filtered data:', data.length, 'earthquakes');
+          updateTableWithData(data);
+          
+          // Update 3D view if scene is initialized
+          if (scene) {
+            console.log('🎨 Updating 3D spheres with filtered data');
+            createEarthquakeSpheres(data);
+          }
+          
+          // Update calendar if it's visible
+          const calendarPane = document.getElementById('calendar-pane');
+          if (calendarPane && calendarPane.classList.contains('active')) {
+            console.log('📅 Updating calendar with new filtered data');
+            generateCalendar();
+          }
+        });
+        
+        // Listen for progress updates
+        window.api.receive('progress-update', function(progressData) {
+          console.log('⏳ Progress update:', progressData.message, progressData.percentage + '%');
+        });
+        
+        // Listen for language changes
+        window.api.receive('language-changed', function(language) {
+          console.log('🌐 Language changed to:', language);
+          updateLanguageButtons(language);
+          
+          // Update place names in 3D view if scene exists
+          if (scene) {
+            setTimeout(() => {
+              updatePlaceNameLanguage();
+            }, 100);
+          }
+        });
+        
+        // Listen for regions list
+        window.api.receive('regions-list', function(regions) {
+          console.log('📍 Received regions:', regions);
+          updateRegionSelect(regions);
+        });
+        
+        // Listen for update completion
+        window.api.receive('update-complete', function(newCount) {
+          console.log('✅ Update complete:', newCount, 'new earthquakes');
+          const updateBtn = document.getElementById('updateBtn');
+          if (updateBtn) {
+            updateBtn.disabled = false;
+            updateBtn.textContent = 'Update';
+          }
+          const statusDiv = document.getElementById('statusMessage');
+          if (statusDiv) {
+            statusDiv.innerHTML = `Update complete. Found ${newCount} new earthquakes.`;
+            statusDiv.className = 'status-message success';
+            statusDiv.style.display = 'block';
+            setTimeout(() => statusDiv.style.display = 'none', 3000);
+          }
+        });
+        
+        // Listen for errors
+        window.api.receive('error', function(error) {
+          console.error('❌ Error from main process:', error);
+          const statusDiv = document.getElementById('statusMessage');
+          if (statusDiv) {
+            statusDiv.innerHTML = error;
+            statusDiv.className = 'status-message error';
+            statusDiv.style.display = 'block';
+            setTimeout(() => statusDiv.style.display = 'none', 5000);
+          }
+        });
+        
+        // Listen for delete completion
+        window.api.receive('delete-complete', function(result) {
+          console.log('✅ Delete complete:', result);
+          const statusDiv = document.getElementById('statusMessage');
+          if (statusDiv) {
+            statusDiv.innerHTML = `Deleted earthquake record: ${result.eventId}`;
+            statusDiv.className = 'status-message success';
+            statusDiv.style.display = 'block';
+            setTimeout(() => statusDiv.style.display = 'none', 3000);
+          }
+          
+          // Re-enable delete buttons
+          const deleteButtons = document.querySelectorAll('.delete-btn');
+          deleteButtons.forEach(btn => btn.disabled = false);
+        });
+        
+        // Listen for delete errors
+        window.api.receive('delete-error', function(error) {
+          console.error('❌ Delete error:', error);
+          const statusDiv = document.getElementById('statusMessage');
+          if (statusDiv) {
+            statusDiv.innerHTML = `Delete failed: ${error}`;
+            statusDiv.className = 'status-message error';
+            statusDiv.style.display = 'block';
+            setTimeout(() => statusDiv.style.display = 'none', 5000);
+          }
+          
+          // Re-enable delete buttons
+          const deleteButtons = document.querySelectorAll('.delete-btn');
+          deleteButtons.forEach(btn => btn.disabled = false);
+        });
+        
+        // Listen for cache clear completion
+        window.api.receive('cache-cleared', function(result) {
+          console.log('✅ Cache cleared:', result);
+          const clearCacheBtn = document.getElementById('clearCacheBtn');
+          if (clearCacheBtn) {
+            clearCacheBtn.disabled = false;
+            clearCacheBtn.textContent = 'Clear Cache';
+          }
+          const statusDiv = document.getElementById('statusMessage');
+          if (statusDiv) {
+            statusDiv.innerHTML = `Cache cleared! Deleted ${result.deletedFiles} files.`;
+            statusDiv.className = 'status-message success';
+            statusDiv.style.display = 'block';
+            setTimeout(() => statusDiv.style.display = 'none', 3000);
+          }
+        });
+        
+        // Listen for cache clear errors
+        window.api.receive('cache-clear-error', function(error) {
+          console.error('❌ Cache clear error:', error);
+          const clearCacheBtn = document.getElementById('clearCacheBtn');
+          if (clearCacheBtn) {
+            clearCacheBtn.disabled = false;
+            clearCacheBtn.textContent = 'Clear Cache';
+          }
+          const statusDiv = document.getElementById('statusMessage');
+          if (statusDiv) {
+            statusDiv.innerHTML = `Cache clear failed: ${error}`;
+            statusDiv.className = 'status-message error';
+            statusDiv.style.display = 'block';
+            setTimeout(() => statusDiv.style.display = 'none', 5000);
+          }
+        });
+        
+        // Listen for historical data fetch completion
+        window.api.receive('historical-data-complete', function(result) {
+          console.log('✅ Historical data fetch complete:', result);
+          const fetchHistoryBtn = document.getElementById('fetchHistoryBtn');
+          if (fetchHistoryBtn) {
+            fetchHistoryBtn.disabled = false;
+            fetchHistoryBtn.textContent = 'Fetch History';
+          }
+          const statusDiv = document.getElementById('statusMessage');
+          if (statusDiv) {
+            statusDiv.innerHTML = `Historical data fetch complete! Found ${result.newCount} new earthquakes over ${result.days} days.`;
+            statusDiv.className = 'status-message success';
+            statusDiv.style.display = 'block';
+            setTimeout(() => statusDiv.style.display = 'none', 5000);
+          }
+        });
+        
+        // Listen for historical data fetch errors
+        window.api.receive('historical-data-error', function(error) {
+          console.error('❌ Historical data error:', error);
+          const fetchHistoryBtn = document.getElementById('fetchHistoryBtn');
+          if (fetchHistoryBtn) {
+            fetchHistoryBtn.disabled = false;
+            fetchHistoryBtn.textContent = 'Fetch History';
+          }
+          const statusDiv = document.getElementById('statusMessage');
+          if (statusDiv) {
+            statusDiv.innerHTML = `Historical data fetch failed: ${error}`;
+            statusDiv.className = 'status-message error';
+            statusDiv.style.display = 'block';
+            setTimeout(() => statusDiv.style.display = 'none', 5000);
+          }
+        });
+        
+        console.log('✅ IPC listeners setup complete!');
+        
+        // Request initial data and regions list
+        setTimeout(function() {
+          window.api.send('get-regions');
+          window.api.send('refresh-view');
+          console.log('📡 Requested initial data and regions');
+        }, 500);
+        
+      } else {
+        console.warn('⚠️ Window API not available - IPC disabled');
+        // Show sample data if no API available
+        setTimeout(generateSampleData, 1000);
+      }
+      
+      // Add filter functionality
+      const applyBtn = document.getElementById('applyBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const regionSelect = document.getElementById('regionSelect');
+      const magMin = document.getElementById('magMin');
+      const magMax = document.getElementById('magMax');
+      
+      if (applyBtn) {
+        applyBtn.addEventListener('click', function() {
+          console.log('🔍 Apply filter clicked');
+          applyFilters();
+        });
+      }
+      
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+          console.log('🔄 Reset filter clicked');
+          resetFilters();
+        });
+      }
+      
+      // Auto-apply filters when inputs change
+      if (regionSelect) {
+        regionSelect.addEventListener('change', applyFilters);
+      }
+      if (magMin) {
+        magMin.addEventListener('change', applyFilters);
+      }
+      if (magMax) {
+        magMax.addEventListener('change', applyFilters);
+      }
+      
+      function applyFilters() {
+        const region = regionSelect ? regionSelect.value : 'all';
+        const minMag = magMin ? parseFloat(magMin.value) : 0;
+        const maxMag = magMax ? parseFloat(magMax.value) : 10;
+        
+        console.log('🔍 Applying filters:', { region, minMag, maxMag });
+        
+        // Save filter settings
+        updateSetting('filters.region', region);
+        updateSetting('filters.magMin', minMag);
+        updateSetting('filters.magMax', maxMag);
+        
+        if (window.api) {
+          window.api.send('filter-changed', {
+            region: region,
+            magMin: minMag,
+            magMax: maxMag
+          });
+        } else {
+          // Apply filter locally if no API
+          applyLocalFilters(region, minMag, maxMag);
+        }
+      }
+      
+      function resetFilters() {
+        if (regionSelect) regionSelect.value = 'all';
+        if (magMin) magMin.value = '0';
+        if (magMax) magMax.value = '10';
+        
+        // Update range display
+        updateRangeDisplay();
+        
+        applyFilters();
+      }
+      
+      function applyLocalFilters(region, minMag, maxMag) {
+        if (!window.currentEarthquakeData) return;
+        
+        const filtered = window.currentEarthquakeData.filter(eq => {
+          const regionMatch = region === 'all' || 
+                             (eq.region_ja && eq.region_ja.includes(region)) || 
+                             (eq.region_en && eq.region_en.includes(region));
+          const magMatch = eq.magnitude >= minMag && eq.magnitude <= maxMag;
+          return regionMatch && magMatch;
+        });
+        
+        console.log(`🔍 Local filter result: ${filtered.length}/${window.currentEarthquakeData.length} earthquakes`);
+        updateTableWithData(filtered);
+        
+        // Update calendar if visible
+        const calendarPane = document.getElementById('calendar-pane');
+        if (calendarPane && calendarPane.classList.contains('active')) {
+          generateCalendar();
+        }
+      }
+      
+      function updateRangeDisplay() {
+        const minVal = magMin ? parseFloat(magMin.value) : 0;
+        const maxVal = magMax ? parseFloat(magMax.value) : 10;
+        const rangeDisplay = document.getElementById('rangeDisplay');
+        if (rangeDisplay) {
+          rangeDisplay.textContent = `${minVal.toFixed(1)} - ${maxVal.toFixed(1)}`;
+        }
+      }
+      
+      // Initialize range display
+      updateRangeDisplay();
+      
+      console.log('✅ Basic functionality setup complete!');
+      
+      // Show console help on startup
+      setTimeout(() => {
+        console.log('📋 Earthquake App loaded! Type earthquakeAppSettings.help() for console commands');
+      }, 2000);
+    });
+    
+    // Generate sample data for testing
+    function generateSampleData() {
+      const sampleData = [
+        {
+          eventId: 'sample001',
+          datetime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          latitude: 35.6762,
+          longitude: 139.6503,
+          depth: 10,
+          magnitude: 4.2,
+          region_ja: '東京都',
+          region_en: 'Tokyo Metropolis'
+        },
+        {
+          eventId: 'sample002',
+          datetime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+          latitude: 34.6937,
+          longitude: 135.5023,
+          depth: 15,
+          magnitude: 3.8,
+          region_ja: '大阪府',
+          region_en: 'Osaka Prefecture'
+        },
+        {
+          eventId: 'sample003',
+          datetime: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+          latitude: 35.2271,
+          longitude: 139.0394,
+          depth: 25,
+          magnitude: 5.1,
+          region_ja: '神奈川県',
+          region_en: 'Kanagawa Prefecture'
+        }
+      ];
+      
+      const tbody = document.getElementById('tableBody');
+      if (tbody) {
+        tbody.innerHTML = sampleData.map((eq, index) => `
+          <tr onclick="selectEarthquake(${index})" style="cursor: pointer;">
+            <td>${new Date(eq.datetime).toLocaleString()}</td>
+            <td>${eq.latitude.toFixed(3)}</td>
+            <td>${eq.longitude.toFixed(3)}</td>
+            <td>${eq.depth}</td>
+            <td style="font-weight: bold; color: ${eq.magnitude < 4 ? '#28a745' : eq.magnitude < 6 ? '#ffc107' : '#dc3545'};">${eq.magnitude}</td>
+            <td>${eq.region_ja}</td>
+          </tr>
+        `).join('');
+        console.log('Sample data loaded into table');
+      }
+    }
+    
+    // Remove this simple version - will be replaced by comprehensive one below
+    
+    // Function to update table with real data from main process
+    function updateTableWithData(data) {
+      console.log('🔄 Updating table with', data.length, 'earthquakes');
+      const tbody = document.getElementById('tableBody');
+      if (!tbody) return;
+      
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">No earthquake data available</td></tr>';
+        // Clear 3D visualization
+        if (window.createEarthquakeSpheres) {
+          window.createEarthquakeSpheres([]);
+        }
+        return;
+      }
+      
+      tbody.innerHTML = data.map((eq, index) => `
+        <tr onclick="selectEarthquake(${index})" style="cursor: pointer;">
+          <td>${new Date(eq.datetime).toLocaleString()}</td>
+          <td>${eq.latitude.toFixed(3)}</td>
+          <td>${eq.longitude.toFixed(3)}</td>
+          <td>${eq.depth}</td>
+          <td style="font-weight: bold; color: ${eq.magnitude < 4 ? '#28a745' : eq.magnitude < 6 ? '#ffc107' : '#dc3545'};">${eq.magnitude}</td>
+          <td>${eq.region_ja}</td>
+          <td onclick="event.stopPropagation();">
+            <button class="delete-btn" onclick="deleteEarthquake('${eq.eventId}', ${index})" title="Delete this earthquake record">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      
+      // Store data globally for earthquake selection
+      window.currentEarthquakeData = data;
+      
+      // Update 3D visualization if scene is initialized
+      if (window.createEarthquakeSpheres && scene) {
+        window.createEarthquakeSpheres(data);
+      }
+      
+      console.log('✅ Table updated successfully');
+    }
+    
+    // Function to update language buttons
+    function updateLanguageButtons(language) {
+      const langButtons = document.querySelectorAll('.lang-btn');
+      langButtons.forEach(function(btn) {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-language') === language) {
+          btn.classList.add('active');
+        }
+      });
+    }
+    
+    // Function to update region select options
+    function updateRegionSelect(regions) {
+      const select = document.getElementById('regionSelect');
+      if (select && regions) {
+        select.innerHTML = '<option value="all">All Regions</option>' +
+          regions.filter(r => r !== 'all').map(region => 
+            `<option value="${region}">${region}</option>`
+          ).join('');
+      }
+    }
+    
+    // Updated selectEarthquake to work with real data
+    function selectEarthquake(index) {
+      console.log('🎯 selectEarthquake called with index:', index);
+      
+      // Get earthquake data from current data
+      const earthquake = window.currentEarthquakeData ? window.currentEarthquakeData[index] : null;
+      if (!earthquake) {
+        console.error('❌ No earthquake data found for index:', index);
+        return;
+      }
+      
+      console.log('🎯 Selected earthquake:', earthquake);
+      
+      // Update table selection - highlight the selected row
+      document.querySelectorAll('.data-table tbody tr').forEach(row => {
+        row.classList.remove('selected');
+      });
+      const selectedRow = document.querySelector(`[data-earthquake-index="${index}"]`);
+      if (selectedRow) {
+        selectedRow.classList.add('selected');
+        console.log('🎯 Table row highlighted');
+      }
+      
+      // Show earthquake details
+      showEarthquakeDetails(earthquake);
+      
+      // Focus on earthquake in 3D view if available
+      if (scene && window.earthquakeSpheres) {
+        console.log('🎯 Focusing on earthquake in 3D view');
+        
+        // Find the corresponding sphere by matching earthquake data
+        const targetSphere = window.earthquakeSpheres.find(sphere => {
+          const sphereData = sphere.userData;
+          if (!sphereData) return false;
+          
+          // Match by eventId if available, otherwise by position and magnitude
+          if (earthquake.eventId && sphereData.eventId) {
+            return sphereData.eventId === earthquake.eventId;
+          }
+          
+          // Fallback to position and magnitude matching
+          return Math.abs(sphereData.latitude - earthquake.latitude) < 0.001 &&
+                 Math.abs(sphereData.longitude - earthquake.longitude) < 0.001 &&
+                 Math.abs(sphereData.magnitude - earthquake.magnitude) < 0.1;
+        });
+        
+        if (targetSphere) {
+          console.log('🎯 Found matching sphere, focusing camera');
+          
+          // Clear previous selection highlighting
+          window.earthquakeSpheres.forEach(sphere => {
+            if (sphere.userData.selectedHighlight) {
+              sphere.material.emissive.setHex(0x000000);
+              sphere.userData.selectedHighlight = false;
+            }
+          });
+          
+          // Highlight the selected sphere
+          targetSphere.material.emissive.setHex(0x444444);
+          targetSphere.userData.selectedHighlight = true;
+          
+          // Focus camera on the earthquake sphere
+          focusOnEarthquake(targetSphere);
+        } else {
+          console.warn('⚠️ Could not find matching sphere for earthquake:', earthquake.eventId || 'unknown id');
+        }
+      }
+    }
+    
+    function showEarthquakeDetails(earthquake) {
+      const details = `
+        <strong>🎯 Selected Earthquake:</strong><br>
+        Time: ${new Date(earthquake.datetime).toLocaleString()}<br>
+        Location: ${earthquake.latitude.toFixed(3)}°, ${earthquake.longitude.toFixed(3)}°<br>
+        Depth: ${earthquake.depth} km<br>
+        Magnitude: ${earthquake.magnitude}<br>
+        Region: ${earthquake.region_ja}
+      `;
+      
+      const statusDiv = document.getElementById('statusMessage');
+      if (statusDiv) {
+        statusDiv.innerHTML = details;
+        statusDiv.className = 'status-message success';
+        statusDiv.style.display = 'block';
+        setTimeout(() => statusDiv.style.display = 'none', 5000);
+      }
+    }
+    
+    // 3D Visualization functionality
+    let scene, camera, renderer, earthquakeSpheres = [];
+    let currentData = [];
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+    let tooltip = null;
+    let hoveredSphere = null;
+    
+    // Make earthquakeSpheres globally accessible
+    window.earthquakeSpheres = earthquakeSpheres;
+    
+    function init3DScene() {
+      if (scene) return; // Already initialized
+      
+      console.log('🎨 Initializing 3D scene...');
+      
+      const container = document.querySelector('.viz-container');
+      const canvas = document.getElementById('vizCanvas');
+      
+      if (!container || !canvas) {
+        console.error('❌ Could not find 3D container or canvas');
+        return;
+      }
+      
+      // Scene setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x001122);
+      
+      // Camera setup
+      const rect = container.getBoundingClientRect();
+      camera = new THREE.PerspectiveCamera(75, rect.width / rect.height, 0.1, 10000);
+      camera.position.set(0, 100, 200);
+      
+      // Renderer setup
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+      renderer.setSize(rect.width, rect.height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      
+      // Initialize raycaster for mouse interaction
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+      
+      // Create tooltip element
+      createTooltip();
+      
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+      scene.add(ambientLight);
+      
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(100, 100, 50);
+      directionalLight.castShadow = true;
+      scene.add(directionalLight);
+      
+      // Ground plane removed for cleaner visualization
+      
+      // Controls
+      setup3DControls();
+      
+      // Add mouse interaction for hover and click
+      setupMouseInteraction();
+      
+      // Add terrain visualization
+      createTerrainVisualization();
+      
+      // Create navigation cube for camera orientation
+      createNavigationCube();
+      
+      // Add a test sphere to verify 3D is working
+      const testGeometry = new THREE.SphereGeometry(5, 32, 32);
+      const testMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0xff0000,
+        emissive: 0x440000
+      });
+      const testSphere = new THREE.Mesh(testGeometry, testMaterial);
+      testSphere.position.set(0, 10, 0);
+      scene.add(testSphere);
+      console.log('🎨 Added test sphere at (0, 10, 0)');
+      
+      // Start render loop
+      animate3D();
+      
+      // Handle window resize
+      window.addEventListener('resize', onWindowResize);
+      
+      // Create spheres if we have data
+      if (window.currentEarthquakeData && window.currentEarthquakeData.length > 0) {
+        createEarthquakeSpheres(window.currentEarthquakeData);
+      } else {
+        // Update the data count display
+        const dataCount = document.getElementById('dataCount');
+        if (dataCount) {
+          dataCount.textContent = 'No earthquake data available - Click refresh to load data';
+        }
+      }
+      
+      console.log('✅ 3D scene initialized successfully');
+    }
+    
+    function setup3DControls() {
+      let mouseDown = false;
+      let mouseButton = 0;
+      let mouseX = 0;
+      let mouseY = 0;
+      let targetRotationX = 0;
+      let targetRotationY = 0;
+      let targetDistance = 200;
+      let panOffset = new THREE.Vector3(0, 0, 0);
+      let lookAtTarget = new THREE.Vector3(0, 0, 0);
+      
+      const canvas = document.getElementById('vizCanvas');
+      
+      canvas.addEventListener('mousedown', (event) => {
+        mouseDown = true;
+        mouseButton = event.button;
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+      });
+      
+      canvas.addEventListener('mouseup', () => {
+        mouseDown = false;
+      });
+      
+      canvas.addEventListener('mousemove', (event) => {
+        if (!mouseDown) return;
+        
+        const deltaX = event.clientX - mouseX;
+        const deltaY = event.clientY - mouseY;
+        
+        if (mouseButton === 0) { // Left click - rotate
+          targetRotationY += deltaX * 0.01;
+          targetRotationX += deltaY * 0.01;
+          targetRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, targetRotationX));
+          updateCameraPosition();
+        } else if (mouseButton === 2) { // Right click - pan
+          // Calculate pan direction based on camera orientation
+          const panSpeed = 0.5;
+          const cameraDirection = new THREE.Vector3();
+          camera.getWorldDirection(cameraDirection);
+          
+          const right = new THREE.Vector3();
+          right.crossVectors(cameraDirection, camera.up).normalize();
+          
+          const up = new THREE.Vector3();
+          up.crossVectors(right, cameraDirection).normalize();
+          
+          // Apply pan offset
+          panOffset.add(right.clone().multiplyScalar(-deltaX * panSpeed));
+          panOffset.add(up.clone().multiplyScalar(deltaY * panSpeed));
+          
+          // Update look at target
+          lookAtTarget.copy(panOffset);
+          
+          updateCameraPosition();
+        }
+        
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+      });
+      
+      canvas.addEventListener('wheel', (event) => {
+        targetDistance += event.deltaY * 0.1;
+        targetDistance = Math.max(10, Math.min(1000, targetDistance));
+        updateCameraPosition();
+        event.preventDefault();
+      });
+      
+      canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+      });
+      
+      function updateCameraPosition() {
+        // Calculate orbital position around the lookAt target
+        const x = targetDistance * Math.sin(targetRotationY) * Math.cos(targetRotationX);
+        const y = targetDistance * Math.sin(targetRotationX);
+        const z = targetDistance * Math.cos(targetRotationY) * Math.cos(targetRotationX);
+        
+        // Apply pan offset
+        camera.position.set(x + panOffset.x, y + panOffset.y, z + panOffset.z);
+        camera.lookAt(lookAtTarget);
+      }
+    }
+    
+    function createTooltip() {
+      // Create tooltip element
+      tooltip = document.createElement('div');
+      tooltip.style.cssText = `
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 1000;
+        display: none;
+        max-width: 300px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      `;
+      document.body.appendChild(tooltip);
+      console.log('✅ Created tooltip element');
+    }
+    
+    function setupMouseInteraction() {
+      const canvas = document.getElementById('vizCanvas');
+      
+      // Mouse move for hover effects
+      canvas.addEventListener('mousemove', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        // Update raycaster
+        raycaster.setFromCamera(mouse, camera);
+        
+        // Check for intersections with earthquake spheres
+        const intersects = raycaster.intersectObjects(earthquakeSpheres);
+        
+        if (intersects.length > 0) {
+          const intersectedSphere = intersects[0].object;
+          
+          if (hoveredSphere !== intersectedSphere) {
+            // Reset previous hover
+            if (hoveredSphere) {
+              hoveredSphere.material.emissive.setHex(0x000000);
+              // Reset to current slider scale, not fixed scale
+              const scaleSlider = document.getElementById('sphereScale');
+              const currentScale = scaleSlider ? parseFloat(scaleSlider.value) : 1;
+              hoveredSphere.scale.set(currentScale, currentScale, currentScale);
+            }
+            
+            // Set new hover
+            hoveredSphere = intersectedSphere;
+            hoveredSphere.material.emissive.setHex(0x333333);
+            // Scale up from current scale, not from fixed scale
+            const scaleSlider = document.getElementById('sphereScale');
+            const currentScale = scaleSlider ? parseFloat(scaleSlider.value) : 1;
+            const hoverScale = currentScale * 1.2;
+            hoveredSphere.scale.set(hoverScale, hoverScale, hoverScale);
+            
+            // Show tooltip
+            const eq = intersectedSphere.userData;
+            showTooltip(event, eq);
+          } else {
+            // Update tooltip position
+            if (tooltip.style.display === 'block') {
+              tooltip.style.left = (event.pageX + 10) + 'px';
+              tooltip.style.top = (event.pageY + 10) + 'px';
+            }
+          }
+        } else {
+          // Reset hover
+          if (hoveredSphere) {
+            hoveredSphere.material.emissive.setHex(0x000000);
+            // Reset to current slider scale
+            const scaleSlider = document.getElementById('sphereScale');
+            const currentScale = scaleSlider ? parseFloat(scaleSlider.value) : 1;
+            hoveredSphere.scale.set(currentScale, currentScale, currentScale);
+            hoveredSphere = null;
+          }
+          hideTooltip();
+        }
+      });
+      
+      // Mouse click for camera focus
+      canvas.addEventListener('click', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        raycaster.setFromCamera(mouse, camera);
+        
+        // Check for place name clicks first
+        const placeSprites = [];
+        scene.traverse(object => {
+          if (object.userData && object.userData.isPlaceLabel) {
+            placeSprites.push(object);
+          }
+        });
+        
+        const placeIntersects = raycaster.intersectObjects(placeSprites);
+        if (placeIntersects.length > 0) {
+          const clickedPlace = placeIntersects[0].object;
+          showPlaceInfo(clickedPlace.userData.place);
+          return;
+        }
+        
+        // Check for earthquake sphere clicks
+        const intersects = raycaster.intersectObjects(earthquakeSpheres);
+        if (intersects.length > 0) {
+          const clickedSphere = intersects[0].object;
+          focusOnEarthquake(clickedSphere);
+        }
+      });
+      
+      // Hide tooltip when mouse leaves canvas
+      canvas.addEventListener('mouseleave', () => {
+        if (hoveredSphere) {
+          hoveredSphere.material.emissive.setHex(0x000000);
+          // Reset to current slider scale
+          const scaleSlider = document.getElementById('sphereScale');
+          const currentScale = scaleSlider ? parseFloat(scaleSlider.value) : 1;
+          hoveredSphere.scale.set(currentScale, currentScale, currentScale);
+          hoveredSphere = null;
+        }
+        hideTooltip();
+      });
+      
+      // Add click event for navigation cube interaction
+      canvas.addEventListener('click', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = event.clientX - rect.left;
+        const clientY = event.clientY - rect.top;
+        
+        // Check if click is in navigation cube area (bottom-right corner)
+        const cubeSize = 100;
+        const margin = 20;
+        const cubeArea = {
+          left: rect.width - cubeSize - margin,
+          top: rect.height - cubeSize - margin,
+          right: rect.width - margin,
+          bottom: rect.height - margin
+        };
+        
+        if (clientX >= cubeArea.left && clientX <= cubeArea.right &&
+            clientY >= cubeArea.top && clientY <= cubeArea.bottom) {
+          
+          // Click is in navigation cube area - convert to cube coordinates
+          const cubeX = ((clientX - cubeArea.left) / cubeSize) * 2 - 1;
+          const cubeY = -((clientY - cubeArea.top) / cubeSize) * 2 + 1;
+          
+          // Use cube camera and scene for raycasting
+          if (window.cubeCamera && window.cubeScene && window.navigationCube) {
+            const cubeRaycaster = new THREE.Raycaster();
+            const cubeMouse = new THREE.Vector2(cubeX, cubeY);
+            cubeRaycaster.setFromCamera(cubeMouse, window.cubeCamera);
+            
+            const cubeIntersects = cubeRaycaster.intersectObject(window.navigationCube);
+            
+            if (cubeIntersects.length > 0) {
+              const intersect = cubeIntersects[0];
+              const faceIndex = intersect.face.materialIndex;
+              const faces = window.navigationCube.userData.faces;
+              
+              if (faces && faces[faceIndex]) {
+                const direction = faces[faceIndex].name;
+                console.log(`🧭 Clicked on navigation cube face: ${direction}`);
+                setOrthogonalView(direction);
+                return; // Don't process other interactions
+              }
+            }
+          }
+        } else {
+          // Click is in main view area - handle earthquake spheres
+          mouse.x = (clientX / rect.width) * 2 - 1;
+          mouse.y = -(clientY / rect.height) * 2 + 1;
+          
+          // Update raycaster for main scene
+          raycaster.setFromCamera(mouse, camera);
+          
+          // Check for intersections with earthquake spheres
+          const sphereIntersects = raycaster.intersectObjects(earthquakeSpheres);
+          
+          if (sphereIntersects.length > 0) {
+            const intersectedSphere = sphereIntersects[0].object;
+            const eq = intersectedSphere.userData;
+            
+            if (eq) {
+              console.log('🎯 Clicked on earthquake sphere:', eq.eventId);
+              focusOnEarthquake(intersectedSphere);
+            }
+          }
+        }
+      });
+      
+      console.log('✅ Mouse interaction setup complete');
+    }
+    
+    function showTooltip(event, earthquake) {
+      if (!tooltip || !earthquake) return;
+      
+      const content = `
+        <div style="font-weight: bold; color: #fff200; margin-bottom: 5px;">
+          Earthquake Details
+        </div>
+        <div><strong>Time:</strong> ${new Date(earthquake.datetime).toLocaleString()}</div>
+        <div><strong>Location:</strong> ${earthquake.latitude.toFixed(3)}°, ${earthquake.longitude.toFixed(3)}°</div>
+        <div><strong>Depth:</strong> ${earthquake.depth} km</div>
+        <div><strong>Magnitude:</strong> ${earthquake.magnitude}</div>
+        <div><strong>Region:</strong> ${earthquake.region_ja}</div>
+        <div style="margin-top: 5px; font-size: 10px; color: #ccc;">
+          Click to focus camera on this earthquake
+        </div>
+      `;
+      
+      tooltip.innerHTML = content;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (event.pageX + 10) + 'px';
+      tooltip.style.top = (event.pageY + 10) + 'px';
+    }
+    
+    function hideTooltip() {
+      if (tooltip) {
+        tooltip.style.display = 'none';
+      }
+    }
+    
+    function focusOnEarthquake(sphere) {
+      if (!sphere || !camera) return;
+      
+      const eq = sphere.userData;
+      console.log('🎯 Focusing on earthquake:', eq.eventId, 'at depth:', eq.depth, 'km');
+      
+      // Calculate target position (positioned to see the underground earthquake)
+      const targetPos = sphere.position.clone();
+      targetPos.y += Math.max(50, eq.depth * 0.5); // Position camera above ground to see underground earthquake
+      targetPos.z += 30; // Move back slightly for better viewing angle
+      
+      console.log('🎯 Earthquake position:', sphere.position);
+      console.log('🎯 Camera target position:', targetPos);
+      
+      // Animate camera movement
+      animateCameraToPosition(targetPos, sphere.position);
+      
+      // Show earthquake details
+      const statusDiv = document.getElementById('statusMessage');
+      if (statusDiv) {
+        statusDiv.innerHTML = `
+          <strong>🎯 Focused on Earthquake:</strong><br>
+          Time: ${new Date(eq.datetime).toLocaleString()}<br>
+          Location: ${eq.latitude.toFixed(3)}°, ${eq.longitude.toFixed(3)}°<br>
+          Depth: ${eq.depth} km<br>
+          Magnitude: ${eq.magnitude}<br>
+          Region: ${eq.region_ja}
+        `;
+        statusDiv.className = 'status-message success';
+        statusDiv.style.display = 'block';
+        setTimeout(() => statusDiv.style.display = 'none', 5000);
+      }
+    }
+    
+    function animateCameraToPosition(targetPos, lookAtPos) {
+      const startPos = camera.position.clone();
+      const startLookAt = new THREE.Vector3(0, 0, 0);
+      
+      let progress = 0;
+      const duration = 1000; // 1 second
+      const startTime = Date.now();
+      
+      function animate() {
+        const elapsed = Date.now() - startTime;
+        progress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        
+        camera.position.lerpVectors(startPos, targetPos, easeProgress);
+        
+        // Smooth lookAt transition
+        const currentLookAt = new THREE.Vector3();
+        currentLookAt.lerpVectors(startLookAt, lookAtPos, easeProgress);
+        camera.lookAt(currentLookAt);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // After animation, update camera controls to match final position
+          console.log('🎯 Camera animation complete, final position:', camera.position);
+        }
+      }
+      
+      animate();
+    }
+    
+    function createTerrainVisualization() {
+      console.log('🌊 Creating clean 3D visualization without terrain layer');
+      
+      // Create Japan map overlay at sea level
+      createSeismicZoneMapOverlay();
+      
+      // Add place name layer
+      createPlaceNameLayer();
+      
+      console.log('✅ Clean 3D visualization setup complete');
+    }
+    
+    function createNavigationCube() {
+      console.log('🧭 Creating navigation cube in bottom-right corner...');
+      
+      // Create a separate scene and camera for the navigation cube
+      window.cubeScene = new THREE.Scene();
+      window.cubeCamera = new THREE.PerspectiveCamera(50, 1, 1, 1000);
+      window.cubeCamera.position.set(0, 0, 100);
+      window.cubeCamera.lookAt(0, 0, 0); // Always look at cube center
+      
+      // Create a small cube for navigation
+      const cubeSize = 30;
+      const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+      
+      // Create materials for each face with labels
+      // SWAPPED LATITUDE DIRECTION: NORTH/SOUTH labels swapped due to negated Z coordinate
+      const faces = [
+        { name: 'EAST', color: 0xff6666, textColor: 'white' },   // +X (Right)
+        { name: 'WEST', color: 0x66ff66, textColor: 'black' },   // -X (Left)
+        { name: 'TOP', color: 0x6666ff, textColor: 'white' },    // +Y (Top)
+        { name: 'BOTTOM', color: 0xffff66, textColor: 'black' }, // -Y (Bottom)
+        { name: 'NORTH', color: 0xff66ff, textColor: 'white' },  // +Z (Front) - now NORTH due to swapped latitude
+        { name: 'SOUTH', color: 0x66ffff, textColor: 'black' }   // -Z (Back) - now SOUTH due to swapped latitude
+      ];
+      
+      const materials = faces.map(face => {
+        // Create canvas for face texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        
+        // Fill background
+        ctx.fillStyle = `#${face.color.toString(16).padStart(6, '0')}`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Add border
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        
+        // Add text label
+        ctx.fillStyle = face.textColor;
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(face.name, canvas.width / 2, canvas.height / 2);
+        
+        // Create texture and material
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        
+        return new THREE.MeshPhongMaterial({
+          map: texture,
+          transparent: false
+        });
+      });
+      
+      // Create cube mesh - always centered at origin for cube scene
+      const navigationCube = new THREE.Mesh(cubeGeometry, materials);
+      navigationCube.position.set(0, 0, 0); // Keep at origin in cube scene
+      navigationCube.userData = {
+        isNavigationCube: true,
+        faces: faces
+      };
+      
+      // Add lighting to cube scene
+      const cubeAmbientLight = new THREE.AmbientLight(0x404040, 0.6);
+      window.cubeScene.add(cubeAmbientLight);
+      
+      const cubeDirectionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      cubeDirectionalLight.position.set(50, 50, 50);
+      window.cubeScene.add(cubeDirectionalLight);
+      
+      // Add cube to its own scene
+      window.cubeScene.add(navigationCube);
+      
+      // Store reference for interaction and animation
+      window.navigationCube = navigationCube;
+      
+      console.log('✅ Added navigation cube in separate scene for bottom-right overlay');
+    }
+    
+    function setOrthogonalView(direction) {
+      if (!camera) return;
+      
+      console.log(`🧭 Setting camera to ${direction} view`);
+      
+      const distance = 300; // Distance from center
+      const center = new THREE.Vector3(0, 0, 0); // Look at center
+      
+      let newPosition;
+      
+      switch(direction) {
+        case 'NORTH': // Looking south from north - SWAPPED LATITUDE: now negative Z
+          newPosition = new THREE.Vector3(0, 100, -distance);
+          break;
+        case 'SOUTH': // Looking north from south - SWAPPED LATITUDE: now positive Z
+          newPosition = new THREE.Vector3(0, 100, distance);
+          break;
+        case 'EAST': // Looking west from east
+          newPosition = new THREE.Vector3(distance, 100, 0);
+          break;
+        case 'WEST': // Looking east from west
+          newPosition = new THREE.Vector3(-distance, 100, 0);
+          break;
+        case 'TOP': // Looking down from above
+          newPosition = new THREE.Vector3(0, distance, 0);
+          break;
+        case 'BOTTOM': // Looking up from below (not practical but included)
+          newPosition = new THREE.Vector3(0, -distance/2, 0);
+          break;
+        default:
+          console.warn('Unknown direction:', direction);
+          return;
+      }
+      
+      // Animate camera to new position
+      animateCameraToPosition(newPosition, center);
+      
+      // Show status message
+      const statusDiv = document.getElementById('statusMessage');
+      if (statusDiv) {
+        statusDiv.innerHTML = `🧭 Camera view: ${direction}`;
+        statusDiv.className = 'status-message info';
+        statusDiv.style.display = 'block';
+        setTimeout(() => statusDiv.style.display = 'none', 2000);
+      }
+    }
+    
+    function createSeismicZoneMapOverlay() {
+      console.log('🗾 Loading Japan coastline from GeoJSON data...');
+      
+      // Load Natural Earth coastline GeoJSON data
+      const geojsonUrls = [
+        // Primary source - High detail coastline (10m resolution)
+        'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_coastline.geojson',
+        // Alternative source - Medium detail coastline
+        'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_coastline.geojson',
+        // Backup source - Low detail coastline
+        'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_coastline.geojson'
+      ];
+      
+      let currentUrlIndex = 0;
+      
+      function tryLoadGeoJSON() {
+        if (currentUrlIndex >= geojsonUrls.length) {
+          console.warn('⚠️ Failed to load GeoJSON from all sources, creating fallback');
+          createFallbackJapanMap();
+          return;
+        }
+        
+        fetch(geojsonUrls[currentUrlIndex])
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(geojsonData => {
+            console.log('✅ Successfully loaded GeoJSON coastline data');
+            console.log(`📊 Found ${geojsonData.features.length} coastline features`);
+            
+            // Process the GeoJSON data to create Japan coastline
+            createJapanCoastlineFromGeoJSON(geojsonData);
+          })
+          .catch(error => {
+            console.warn('⚠️ Failed to load GeoJSON from:', geojsonUrls[currentUrlIndex], error);
+            currentUrlIndex++;
+            tryLoadGeoJSON(); // Try next URL
+          });
+      }
+      
+      function createJapanCoastlineFromGeoJSON(geojsonData) {
+        console.log('🎨 Drawing Japan coastline from GeoJSON data...');
+        
+        // Create canvas for Japan coastline
+        const mapCanvas = document.createElement('canvas');
+        mapCanvas.width = 1024;
+        mapCanvas.height = 1024;
+        const ctx = mapCanvas.getContext('2d');
+        
+        // Clear canvas with transparent background
+        ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+        
+        // Japan geographic bounds (same as earthquake coordinate system)
+        const japanBounds = {
+          minLat: 24.0, maxLat: 46.0,
+          minLon: 123.0, maxLon: 146.0
+        };
+        
+        // Convert geographic coordinates to canvas coordinates
+        // Must match the earthquake sphere coordinate system exactly
+        function geoToCanvas(lat, lon) {
+          // Use same coordinate system as earthquake spheres
+          const centerLat = (japanBounds.minLat + japanBounds.maxLat) / 2; // ~35°N
+          const centerLon = (japanBounds.minLon + japanBounds.maxLon) / 2; // ~134.5°E
+          
+          const latRange = japanBounds.maxLat - japanBounds.minLat; // ~22 degrees
+          const lonRange = japanBounds.maxLon - japanBounds.minLon; // ~23 degrees
+          const scaleX = 400 / lonRange; // Scale longitude to 400 units
+          const scaleZ = 400 / latRange; // Scale latitude to 400 units
+          
+          // Convert to 3D world coordinates (same as earthquake spheres)
+          const worldX = (lon - centerLon) * scaleX;
+          const worldZ = (lat - centerLat) * scaleZ;
+          
+          // Convert world coordinates to canvas coordinates
+          // Center the map on canvas and scale to fit
+          const canvasX = (worldX + 200) * (mapCanvas.width / 400); // +200 to center (400/2)
+          const canvasY = (-worldZ + 200) * (mapCanvas.height / 400); // -worldZ to flip Y axis, +200 to center
+          
+          return { x: canvasX, y: canvasY };
+        }
+        
+        // Check if a coordinate is within Japan bounds
+        function isInJapanBounds(lat, lon) {
+          return lat >= japanBounds.minLat && lat <= japanBounds.maxLat &&
+                 lon >= japanBounds.minLon && lon <= japanBounds.maxLon;
+        }
+        
+        // Set up drawing style
+        ctx.strokeStyle = 'rgba(34, 139, 34, 0.9)'; // Forest green coastline
+        ctx.fillStyle = 'rgba(34, 139, 34, 0.6)';   // Lighter green fill
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        let drawnSegments = 0;
+        
+        // Process each coastline feature
+        geojsonData.features.forEach((feature, featureIndex) => {
+          if (feature.geometry.type === 'LineString') {
+            const coordinates = feature.geometry.coordinates;
+            
+            // Check if any part of this coastline is within Japan bounds
+            const hasJapanCoords = coordinates.some(coord => 
+              isInJapanBounds(coord[1], coord[0])
+            );
+            
+            if (hasJapanCoords) {
+              // Draw this coastline segment
+              ctx.beginPath();
+              let hasMoveTo = false;
+              
+              coordinates.forEach(coord => {
+                const [lon, lat] = coord;
+                
+                // Only draw coordinates within or near Japan bounds
+                if (isInJapanBounds(lat, lon)) {
+                  const canvasPoint = geoToCanvas(lat, lon);
+                  
+                  if (!hasMoveTo) {
+                    ctx.moveTo(canvasPoint.x, canvasPoint.y);
+                    hasMoveTo = true;
+                  } else {
+                    ctx.lineTo(canvasPoint.x, canvasPoint.y);
+                  }
+                }
+              });
+              
+              ctx.stroke();
+              drawnSegments++;
+            }
+          } else if (feature.geometry.type === 'MultiLineString') {
+            // Handle MultiLineString features
+            feature.geometry.coordinates.forEach(lineString => {
+              const hasJapanCoords = lineString.some(coord => 
+                isInJapanBounds(coord[1], coord[0])
+              );
+              
+              if (hasJapanCoords) {
+                ctx.beginPath();
+                let hasMoveTo = false;
+                
+                lineString.forEach(coord => {
+                  const [lon, lat] = coord;
+                  
+                  if (isInJapanBounds(lat, lon)) {
+                    const canvasPoint = geoToCanvas(lat, lon);
+                    
+                    if (!hasMoveTo) {
+                      ctx.moveTo(canvasPoint.x, canvasPoint.y);
+                      hasMoveTo = true;
+                    } else {
+                      ctx.lineTo(canvasPoint.x, canvasPoint.y);
+                    }
+                  }
+                });
+                
+                ctx.stroke();
+                drawnSegments++;
+              }
+            });
+          }
+        });
+        
+        console.log(`🌊 Drew ${drawnSegments} coastline segments for Japan region`);
+        
+        // Add "JAPAN" label
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 32px Arial';
+        ctx.textAlign = 'center';
+        
+        const labelPoint = geoToCanvas(36, 138); // Central Japan (aligned with coordinate system)
+        ctx.strokeText('JAPAN', labelPoint.x, labelPoint.y);
+        ctx.fillText('JAPAN', labelPoint.x, labelPoint.y);
+        
+        // Create texture from canvas
+        const mapTexture = new THREE.CanvasTexture(mapCanvas);
+        mapTexture.needsUpdate = true;
+        
+        // Create sea-level plane geometry
+        const seaPlaneGeometry = new THREE.PlaneGeometry(400, 400);
+        
+        // Create material with Japan coastline texture
+        const seaPlaneMaterial = new THREE.MeshBasicMaterial({
+          map: mapTexture,
+          transparent: true,
+          opacity: 0.8,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          alphaTest: 0.1
+        });
+        
+        // Create mesh and position at sea level
+        const seaLevelMapMesh = new THREE.Mesh(seaPlaneGeometry, seaPlaneMaterial);
+        seaLevelMapMesh.rotation.x = -Math.PI / 2;
+        seaLevelMapMesh.position.y = 0.1;
+        seaLevelMapMesh.name = 'japanMap';
+        
+        scene.add(seaLevelMapMesh);
+        
+        console.log('✅ Added Japan coastline overlay from GeoJSON data');
+        window.japanMapMesh = seaLevelMapMesh;
+      }
+      
+      function createFallbackJapanMap() {
+        console.log('🎨 Creating fallback Japan outline...');
+        
+        // Simple fallback if GeoJSON loading fails
+        const mapCanvas = document.createElement('canvas');
+        mapCanvas.width = 512;
+        mapCanvas.height = 512;
+        const ctx = mapCanvas.getContext('2d');
+        
+        ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+        
+        // Simple text-based fallback
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 48px Arial';
+        ctx.textAlign = 'center';
+        
+        ctx.strokeText('JAPAN', mapCanvas.width/2, mapCanvas.height/2);
+        ctx.fillText('JAPAN', mapCanvas.width/2, mapCanvas.height/2);
+        
+        const mapTexture = new THREE.CanvasTexture(mapCanvas);
+        mapTexture.needsUpdate = true;
+        
+        const seaPlaneGeometry = new THREE.PlaneGeometry(400, 400);
+        const seaPlaneMaterial = new THREE.MeshBasicMaterial({
+          map: mapTexture,
+          transparent: true,
+          opacity: 0.6,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          alphaTest: 0.1
+        });
+        
+        const seaLevelMapMesh = new THREE.Mesh(seaPlaneGeometry, seaPlaneMaterial);
+        seaLevelMapMesh.rotation.x = -Math.PI / 2;
+        seaLevelMapMesh.position.y = 0.1;
+        seaLevelMapMesh.name = 'japanMap';
+        
+        scene.add(seaLevelMapMesh);
+        
+        console.log('✅ Added fallback Japan map overlay');
+        window.japanMapMesh = seaLevelMapMesh;
+      }
+      
+      // Start the GeoJSON loading process
+      tryLoadGeoJSON();
+    }
+    
+    function createPlaceNameLayer() {
+      console.log('🏷️ Creating place name layer...');
+      
+      // Major Japanese locations with REAL geographic coordinates
+      // Using actual lat/lon coordinates that will be converted using same system as earthquakes
+      const majorPlaces = [
+        // Major Cities - Real coordinates
+        { name_ja: '東京', name_en: 'Tokyo', lat: 35.6762, lon: 139.6503, type: 'city' },
+        { name_ja: '大阪', name_en: 'Osaka', lat: 34.6937, lon: 135.5023, type: 'city' },
+        { name_ja: '名古屋', name_en: 'Nagoya', lat: 35.1815, lon: 136.9066, type: 'city' },
+        { name_ja: '札幌', name_en: 'Sapporo', lat: 43.0642, lon: 141.3469, type: 'city' },
+        { name_ja: '福岡', name_en: 'Fukuoka', lat: 33.5904, lon: 130.4017, type: 'city' },
+        { name_ja: '仙台', name_en: 'Sendai', lat: 38.2682, lon: 140.8694, type: 'city' },
+        { name_ja: '広島', name_en: 'Hiroshima', lat: 34.3853, lon: 132.4553, type: 'city' },
+        
+        // Major Regions/Prefectures - Representative coordinates
+        { name_ja: '北海道', name_en: 'Hokkaido', lat: 43.2203, lon: 142.8635, type: 'region' },
+        { name_ja: '本州', name_en: 'Honshu', lat: 36.2048, lon: 138.2529, type: 'region' },
+        { name_ja: '四国', name_en: 'Shikoku', lat: 33.7557, lon: 133.5311, type: 'region' },
+        { name_ja: '九州', name_en: 'Kyushu', lat: 33.2382, lon: 131.6123, type: 'region' },
+        
+        // Common Earthquake Regions - Real coordinates
+        { name_ja: 'トカラ列島', name_en: 'Tokara Islands', lat: 29.8317, lon: 129.9306, type: 'islands' },
+        { name_ja: '伊豆諸島', name_en: 'Izu Islands', lat: 34.0685, lon: 139.2394, type: 'islands' },
+        { name_ja: '小笠原諸島', name_en: 'Ogasawara Islands', lat: 27.0940, lon: 142.1919, type: 'islands' },
+        { name_ja: '沖縄', name_en: 'Okinawa', lat: 26.2124, lon: 127.6792, type: 'prefecture' },
+        
+        // Geological Features - Real coordinates  
+        { name_ja: '富士山', name_en: 'Mt. Fuji', lat: 35.3606, lon: 138.7274, type: 'mountain' },
+        { name_ja: '日本海', name_en: 'Sea of Japan', lat: 40.0000, lon: 134.0000, type: 'sea' },
+        { name_ja: '太平洋', name_en: 'Pacific Ocean', lat: 35.0000, lon: 142.0000, type: 'sea' },
+        { name_ja: '瀬戸内海', name_en: 'Seto Inland Sea', lat: 34.2000, lon: 133.2000, type: 'sea' }
+      ];
+      
+      majorPlaces.forEach(place => {
+        createPlaceNameLabel(place);
+      });
+      
+      console.log(`🏷️ Added ${majorPlaces.length} place name labels`);
+    }
+    
+    function createPlaceNameLabel(place) {
+      // Convert lat/lon to world coordinates using SAME system as earthquake spheres
+      const japanBounds = {
+        minLat: 24.0, maxLat: 46.0,
+        minLon: 123.0, maxLon: 146.0
+      };
+      
+      const centerLat = (japanBounds.minLat + japanBounds.maxLat) / 2; // ~35°N
+      const centerLon = (japanBounds.minLon + japanBounds.maxLon) / 2; // ~134.5°E
+      
+      const latRange = japanBounds.maxLat - japanBounds.minLat; // ~22 degrees
+      const lonRange = japanBounds.maxLon - japanBounds.minLon; // ~23 degrees
+      const scaleX = 400 / lonRange; // Scale longitude to 400 units
+      const scaleZ = 400 / latRange; // Scale latitude to 400 units
+      
+      // Convert place coordinates using same transformation as earthquakes
+      // SWAPPED LATITUDE DIRECTION: Negate Z coordinate to match earthquake spheres
+      const worldX = (place.lon - centerLon) * scaleX;
+      const worldZ = -(place.lat - centerLat) * scaleZ; // Negated for latitude swap
+      
+      console.log(`🏷️ Place ${place.name_en}: lat=${place.lat}, lon=${place.lon} → x=${worldX.toFixed(1)}, z=${worldZ.toFixed(1)}`);
+      
+      // Create canvas for text rendering
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = 256;
+      canvas.height = 64;
+      
+      // Determine current language
+      const currentLang = document.querySelector('.lang-btn.active')?.getAttribute('data-language') || 'ja';
+      const displayName = currentLang === 'ja' ? place.name_ja : place.name_en;
+      
+      // Style based on place type with font scaling
+      let baseFontSize, fontColor, backgroundColor;
+      switch (place.type) {
+        case 'city':
+          baseFontSize = 20;
+          fontColor = '#FFFFFF';
+          backgroundColor = 'rgba(25, 118, 210, 0.8)'; // Blue for cities
+          break;
+        case 'region':
+        case 'prefecture':
+          baseFontSize = 18;
+          fontColor = '#FFFFFF';
+          backgroundColor = 'rgba(76, 175, 80, 0.8)'; // Green for regions
+          break;
+        case 'islands':
+          baseFontSize = 16;
+          fontColor = '#FFFFFF';
+          backgroundColor = 'rgba(255, 152, 0, 0.8)'; // Orange for islands
+          break;
+        case 'mountain':
+          baseFontSize = 16;
+          fontColor = '#FFFFFF';
+          backgroundColor = 'rgba(121, 85, 72, 0.8)'; // Brown for mountains
+          break;
+        case 'sea':
+          baseFontSize = 16;
+          fontColor = '#FFFFFF';
+          backgroundColor = 'rgba(3, 169, 244, 0.8)'; // Light blue for seas
+          break;
+        default:
+          baseFontSize = 16;
+          fontColor = '#FFFFFF';
+          backgroundColor = 'rgba(96, 125, 139, 0.8)'; // Gray default
+      }
+      
+      // Apply font scaling
+      const fontSize = Math.round(baseFontSize * placeNameFontScale) + 'px';
+      
+      // Clear canvas and draw background
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Measure text to create proper background
+      context.font = `bold ${fontSize} Arial, sans-serif`;
+      const textWidth = context.measureText(displayName).width;
+      const padding = 8;
+      const bgWidth = textWidth + padding * 2;
+      const bgHeight = parseInt(fontSize) + padding * 2;
+      
+      // Draw background rounded rectangle
+      const x = (canvas.width - bgWidth) / 2;
+      const y = (canvas.height - bgHeight) / 2;
+      
+      context.fillStyle = backgroundColor;
+      context.fillRect(x, y, bgWidth, bgHeight);
+      
+      // Draw text
+      context.fillStyle = fontColor;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(displayName, canvas.width / 2, canvas.height / 2);
+      
+      // Create texture from canvas
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      
+      // Create sprite material
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.9,
+        depthTest: false, // Always render on top
+        depthWrite: false
+      });
+      
+      // Create sprite using calculated world coordinates
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.position.set(worldX, 5, worldZ); // Position lower, but above GeoJSON layer (y=0.1)
+      
+      // Scale based on place type
+      const scale = place.type === 'city' ? 15 : 
+                   place.type === 'region' || place.type === 'prefecture' ? 12 :
+                   place.type === 'sea' ? 10 : 8;
+      sprite.scale.set(scale, scale * 0.25, 1); // Wide but not tall
+      
+      // Store place data for interaction
+      sprite.userData = {
+        place: place,
+        isPlaceLabel: true
+      };
+      
+      scene.add(sprite);
+    }
+    
+    function updatePlaceNameLanguage() {
+      // Remove existing place name sprites
+      const placeSprites = [];
+      scene.traverse(object => {
+        if (object.userData && object.userData.isPlaceLabel) {
+          placeSprites.push(object);
+        }
+      });
+      
+      placeSprites.forEach(sprite => {
+        scene.remove(sprite);
+        if (sprite.material.map) sprite.material.map.dispose();
+        sprite.material.dispose();
+      });
+      
+      // Recreate place names with current language
+      createPlaceNameLayer();
+      
+      console.log('🏷️ Updated place name language');
+    }
+    
+    // Geographic map overlay functions removed - keeping only place names and earthquake spheres
+    
+    function showPlaceInfo(place) {
+      console.log('🏷️ Clicked on place:', place);
+      
+      const currentLang = document.querySelector('.lang-btn.active')?.getAttribute('data-language') || 'ja';
+      const displayName = currentLang === 'ja' ? place.name_ja : place.name_en;
+      const altName = currentLang === 'ja' ? place.name_en : place.name_ja;
+      
+      let typeDescription;
+      switch (place.type) {
+        case 'city':
+          typeDescription = currentLang === 'ja' ? '都市' : 'City';
+          break;
+        case 'region':
+          typeDescription = currentLang === 'ja' ? '地域' : 'Region';
+          break;
+        case 'prefecture':
+          typeDescription = currentLang === 'ja' ? '都道府県' : 'Prefecture';
+          break;
+        case 'islands':
+          typeDescription = currentLang === 'ja' ? '諸島' : 'Islands';
+          break;
+        case 'mountain':
+          typeDescription = currentLang === 'ja' ? '山' : 'Mountain';
+          break;
+        case 'sea':
+          typeDescription = currentLang === 'ja' ? '海域' : 'Sea';
+          break;
+        default:
+          typeDescription = currentLang === 'ja' ? '地点' : 'Location';
+      }
+      
+      // Show place information
+      const statusDiv = document.getElementById('statusMessage');
+      if (statusDiv) {
+        statusDiv.innerHTML = `
+          <strong>🏷️ ${typeDescription}: ${displayName}</strong><br>
+          ${altName}<br>
+          <div style="margin-top: 5px; font-size: 12px; color: #666;">
+            Click on earthquake spheres to focus camera • Hover for details
+          </div>
+        `;
+        statusDiv.className = 'status-message info';
+        statusDiv.style.display = 'block';
+        setTimeout(() => statusDiv.style.display = 'none', 4000);
+      }
+    }
+    
+    function clearEarthquakeSpheres() {
+      earthquakeSpheres.forEach(sphere => {
+        scene.remove(sphere);
+        if (sphere.geometry) sphere.geometry.dispose();
+        if (sphere.material) sphere.material.dispose();
+      });
+      earthquakeSpheres = [];
+      window.earthquakeSpheres = earthquakeSpheres; // Update global reference
+      
+      // Also remove any other spheres that might be leftover (debug spheres, large spheres, etc.)
+      const objectsToRemove = [];
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh && 
+            object.geometry instanceof THREE.SphereGeometry && 
+            !object.userData.isNavigationCube && 
+            !object.userData.isPlaceLabel) {
+          
+          // Check if it's a large sphere (radius > 1.0) or positioned at origin
+          const radius = object.geometry.parameters.radius;
+          const position = object.position;
+          
+          if (radius > 1.0 || (Math.abs(position.x) < 0.1 && Math.abs(position.z) < 0.1 && position.y > -1)) {
+            console.log('🔍 Found suspicious large/center sphere:', {
+              radius: radius,
+              position: position,
+              userData: object.userData
+            });
+            objectsToRemove.push(object);
+          }
+        }
+      });
+      
+      // Remove suspicious spheres
+      objectsToRemove.forEach(obj => {
+        console.log('🗑️ Removing suspicious sphere');
+        scene.remove(obj);
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) obj.material.dispose();
+      });
+    }
+    
+    function getAgeColor(datetime) {
+      const now = new Date();
+      const eventTime = new Date(datetime);
+      const ageHours = (now - eventTime) / (1000 * 60 * 60);
+      
+      if (ageHours < 12) {
+        return new THREE.Color(1, 0, 0); // Red for recent
+      } else {
+        return new THREE.Color(1, 1, 0); // Yellow for older
+      }
+    }
+    
+    function createEarthquakeSpheres(data) {
+      if (!scene) {
+        console.log('🎨 Scene not initialized yet');
+        return;
+      }
+      
+      clearEarthquakeSpheres();
+      
+      if (!data || data.length === 0) {
+        const dataCount = document.getElementById('dataCount');
+        if (dataCount) {
+          dataCount.textContent = 'No earthquake data available';
+        }
+        return;
+      }
+      
+      console.log('🎨 Creating spheres for', data.length, 'earthquakes');
+      
+      // Use fixed Japan coordinate bounds for consistent visualization
+      // Japan spans approximately: Lat 26-46°N, Lon 123-146°E
+      const japanBounds = {
+        minLat: 24.0,  // Southern tip including Okinawa
+        maxLat: 46.0,  // Northern tip of Hokkaido
+        minLon: 123.0, // Western edge
+        maxLon: 146.0  // Eastern edge
+      };
+      
+      const centerLat = (japanBounds.minLat + japanBounds.maxLat) / 2; // ~35°N
+      const centerLon = (japanBounds.minLon + japanBounds.maxLon) / 2; // ~134.5°E
+      
+      // Calculate appropriate scale factor for Japan's size
+      const latRange = japanBounds.maxLat - japanBounds.minLat; // ~22 degrees
+      const lonRange = japanBounds.maxLon - japanBounds.minLon; // ~23 degrees
+      const scaleX = 400 / lonRange; // Scale longitude to 400 units
+      const scaleZ = 400 / latRange; // Scale latitude to 400 units
+      
+      console.log(`🗾 Japan bounds: lat ${japanBounds.minLat}-${japanBounds.maxLat}, lon ${japanBounds.minLon}-${japanBounds.maxLon}`);
+      console.log(`🗾 Center: ${centerLat.toFixed(1)}°N, ${centerLon.toFixed(1)}°E`);
+      console.log(`🗾 Scale factors: X=${scaleX.toFixed(1)}, Z=${scaleZ.toFixed(1)}`);
+      
+      // Group earthquakes by location to handle overlapping
+      const locationGroups = new Map();
+      
+      data.forEach((eq, index) => {
+        console.log(`🎨 Processing earthquake ${index}:`, eq);
+        
+        // Skip earthquakes with invalid coordinates
+        if (!eq.latitude || !eq.longitude || eq.latitude === 0 || eq.longitude === 0) {
+          console.warn('⚠️ Skipping earthquake with invalid coordinates:', eq);
+          return;
+        }
+        
+        // Create location key for grouping nearby earthquakes
+        const locKey = `${Math.round(eq.latitude * 10)}_${Math.round(eq.longitude * 10)}_${Math.round(eq.depth / 5) * 5}`;
+        
+        if (!locationGroups.has(locKey)) {
+          locationGroups.set(locKey, []);
+        }
+        locationGroups.get(locKey).push(eq);
+      });
+      
+      console.log(`🗺️ Grouped ${data.length} earthquakes into ${locationGroups.size} location clusters`);
+      
+      // Create spheres with position spreading for overlapping earthquakes
+      locationGroups.forEach((earthquakes, locKey) => {
+        earthquakes.forEach((eq, groupIndex) => {
+          // Convert lat/lon to world coordinates using proper scaling
+          // SWAPPED LATITUDE DIRECTION: Negate Z coordinate to flip north/south
+          let x = (eq.longitude - centerLon) * scaleX;
+          let z = -(eq.latitude - centerLat) * scaleZ;
+          let y = -eq.depth * 0.5; // Depth below surface (negative = underground, scaled down)
+          
+          // If multiple earthquakes at same location, spread them out in a small circle
+          if (earthquakes.length > 1) {
+            const spreadRadius = Math.min(5, earthquakes.length * 0.8); // Small spread radius
+            const angle = (groupIndex / earthquakes.length) * 2 * Math.PI;
+            x += Math.cos(angle) * spreadRadius;
+            z += Math.sin(angle) * spreadRadius;
+            console.log(`🌍 Spreading earthquake ${groupIndex + 1}/${earthquakes.length} at location: offset x=${Math.cos(angle) * spreadRadius}, z=${Math.sin(angle) * spreadRadius}`);
+          }
+          
+          console.log(`🎨 Sphere position: x=${x.toFixed(1)}, y=${y.toFixed(1)}, z=${z.toFixed(1)}`);
+          
+          // Sphere size based on magnitude - reduced to 10% of current size with cap
+          const baseRadius = Math.min(Math.max(0.045, eq.magnitude * 0.045), 0.5); // Cap at 0.5 to prevent huge spheres
+          console.log(`🎨 Sphere radius: ${baseRadius.toFixed(3)} (magnitude: ${eq.magnitude})`);
+          
+          const geometry = new THREE.SphereGeometry(baseRadius, 16, 16);
+          const material = new THREE.MeshPhongMaterial({
+            color: getAgeColor(eq.datetime),
+            transparent: true,
+            opacity: 0.8, // Get default opacity from slider
+            emissive: getAgeColor(eq.datetime).multiplyScalar(0.2) // Add some glow
+          });
+          
+          const sphere = new THREE.Mesh(geometry, material);
+          sphere.position.set(x, y, z);
+          sphere.castShadow = true;
+          sphere.userData = eq; // Store earthquake data
+          
+          // Apply current scale and alpha from sliders
+          const scaleSlider = document.getElementById('sphereScale');
+          const alphaSlider = document.getElementById('sphereAlpha');
+          if (scaleSlider) {
+            const scale = parseFloat(scaleSlider.value);
+            sphere.scale.set(scale, scale, scale);
+          }
+          if (alphaSlider) {
+            sphere.material.opacity = parseFloat(alphaSlider.value);
+          }
+          
+          scene.add(sphere);
+          earthquakeSpheres.push(sphere);
+        });
+      });
+      
+      // Update global reference
+      window.earthquakeSpheres = earthquakeSpheres;
+      
+      // Update UI
+      const dataCount = document.getElementById('dataCount');
+      if (dataCount) {
+        dataCount.textContent = `${data.length} earthquakes displayed`;
+      }
+      
+      console.log('✅ Created', earthquakeSpheres.length, 'earthquake spheres');
+    }
+    
+    function animate3D() {
+      if (!renderer || !scene || !camera) return;
+      
+      requestAnimationFrame(animate3D);
+      
+      // Rotate spheres slowly for visual effect
+      earthquakeSpheres.forEach(sphere => {
+        sphere.rotation.y += 0.01;
+      });
+      
+      // Update navigation cube to reflect current main camera orientation
+      if (window.navigationCube && window.cubeCamera) {
+        // Copy main camera rotation to cube camera (inverted for correct orientation)
+        window.cubeCamera.rotation.copy(camera.rotation);
+        
+        // Apply inverse rotation to the cube so it shows correct orientation
+        window.navigationCube.rotation.x = -camera.rotation.x;
+        window.navigationCube.rotation.y = -camera.rotation.y;
+        window.navigationCube.rotation.z = -camera.rotation.z;
+      }
+      
+      // Render main scene
+      renderer.render(scene, camera);
+      
+      // Render navigation cube overlay in bottom-right corner
+      if (window.cubeScene && window.cubeCamera && window.navigationCube) {
+        const canvas = renderer.domElement;
+        const cubeSize = 100; // Size of cube viewport
+        const margin = 20;    // Margin from edges
+        
+        // Calculate cube viewport position (bottom-right corner)
+        const cubeX = canvas.width - cubeSize - margin;
+        const cubeY = margin;
+        
+        // Set viewport for navigation cube
+        renderer.setViewport(cubeX, cubeY, cubeSize, cubeSize);
+        
+        // Clear only the cube area
+        renderer.setScissor(cubeX, cubeY, cubeSize, cubeSize);
+        renderer.setScissorTest(true);
+        renderer.clear();
+        
+        // Ensure cube camera is properly centered and looking at cube
+        window.cubeCamera.aspect = 1; // Square aspect ratio
+        window.cubeCamera.updateProjectionMatrix();
+        window.cubeCamera.position.set(0, 0, 100);
+        window.cubeCamera.lookAt(0, 0, 0);
+        
+        // Render navigation cube (cube is always at origin in its own scene)
+        renderer.render(window.cubeScene, window.cubeCamera);
+        
+        // Reset viewport and scissor for next frame
+        renderer.setViewport(0, 0, canvas.width, canvas.height);
+        renderer.setScissorTest(false);
+      }
+    }
+    
+    function onWindowResize() {
+      if (!camera || !renderer) return;
+      
+      const container = document.querySelector('.viz-container');
+      if (!container) return;
+      
+      const rect = container.getBoundingClientRect();
+      camera.aspect = rect.width / rect.height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(rect.width, rect.height);
+    }
+    
+    // Delete earthquake function
+    function deleteEarthquake(eventId, index) {
+      console.log('🗑️ Delete requested for:', eventId, 'index:', index);
+      
+      if (!eventId) {
+        console.error('❌ No eventId provided for deletion');
+        return;
+      }
+      
+      // Show confirmation dialog
+      const earthquake = window.currentEarthquakeData[index];
+      const confirmMessage = earthquake 
+        ? `Are you sure you want to delete this earthquake record?\n\nDate: ${new Date(earthquake.datetime).toLocaleString()}\nLocation: ${earthquake.region_ja}\nMagnitude: ${earthquake.magnitude}`
+        : `Are you sure you want to delete earthquake record ${eventId}?`;
+      
+      if (confirm(confirmMessage)) {
+        console.log('✅ User confirmed deletion');
+        
+        // Disable the delete button to prevent double-clicks
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        deleteButtons.forEach(btn => btn.disabled = true);
+        
+        // Send delete request to main process
+        if (window.api) {
+          window.api.send('delete-earthquake', eventId);
+        } else {
+          console.error('❌ Window API not available');
+          // Re-enable buttons
+          deleteButtons.forEach(btn => btn.disabled = false);
+        }
+      } else {
+        console.log('❌ User cancelled deletion');
+      }
+    }
+    
+    // Calendar functionality
+    let currentCalendarDate = new Date();
+    let currentFilteredData = [];
+    
+    // Application settings with defaults
+    let appSettings = {
+      placeNameFontScale: 2.0,
+      sphereScale: 1.0,
+      sphereAlpha: 0.7,
+      language: 'ja',
+      filters: {
+        region: 'all',
+        magMin: 0,
+        magMax: 10
+      },
+      currentCalendarDate: new Date().toISOString()
+    };
+    
+    // Load settings from localStorage
+    function loadSettings() {
+      try {
+        const savedSettings = localStorage.getItem('earthquakeAppSettings');
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          appSettings = { ...appSettings, ...parsed };
+          console.log('⚙️ Loaded settings from localStorage:', appSettings);
+        } else {
+          console.log('⚙️ No saved settings found, using defaults');
+        }
+      } catch (error) {
+        console.error('❌ Error loading settings:', error);
+        console.log('⚙️ Using default settings');
+      }
+      
+      // Apply loaded settings after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        applyLoadedSettings();
+      }, 100);
+    }
+    
+    // Save settings to localStorage
+    function saveSettings() {
+      try {
+        localStorage.setItem('earthquakeAppSettings', JSON.stringify(appSettings));
+        console.log('💾 Settings saved to localStorage');
+      } catch (error) {
+        console.error('❌ Error saving settings:', error);
+      }
+    }
+    
+    // Apply loaded settings to UI and variables
+    function applyLoadedSettings() {
+      // Apply place name font scale
+      placeNameFontScale = appSettings.placeNameFontScale || 2.0;
+      
+      // Apply UI control values
+      const sphereScaleSlider = document.getElementById('sphereScale');
+      const sphereAlphaSlider = document.getElementById('sphereAlpha');
+      const regionSelect = document.getElementById('regionSelect');
+      const magMin = document.getElementById('magMin');
+      const magMax = document.getElementById('magMax');
+      
+      if (sphereScaleSlider) {
+        sphereScaleSlider.value = appSettings.sphereScale;
+        const scaleValue = document.getElementById('sphereScaleValue');
+        if (scaleValue) scaleValue.textContent = appSettings.sphereScale.toFixed(1) + 'x';
+      }
+      
+      if (sphereAlphaSlider) {
+        sphereAlphaSlider.value = appSettings.sphereAlpha;
+        const alphaValue = document.getElementById('sphereAlphaValue');
+        if (alphaValue) alphaValue.textContent = appSettings.sphereAlpha.toFixed(1);
+      }
+      
+      if (regionSelect) {
+        regionSelect.value = appSettings.filters.region;
+      }
+      
+      if (magMin) {
+        magMin.value = appSettings.filters.magMin;
+      }
+      
+      if (magMax) {
+        magMax.value = appSettings.filters.magMax;
+      }
+      
+      // Update range display
+      updateRangeDisplay();
+      
+      // Apply language setting
+      const langButtons = document.querySelectorAll('.lang-btn');
+      langButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-language') === appSettings.language) {
+          btn.classList.add('active');
+        }
+      });
+      
+      // Restore calendar date
+      if (appSettings.currentCalendarDate) {
+        currentCalendarDate = new Date(appSettings.currentCalendarDate);
+      }
+      
+      console.log('✅ Applied loaded settings to UI');
+    }
+    
+    // Update setting and save
+    function updateSetting(key, value) {
+      if (key.includes('.')) {
+        const [parent, child] = key.split('.');
+        if (!appSettings[parent]) appSettings[parent] = {};
+        appSettings[parent][child] = value;
+      } else {
+        appSettings[key] = value;
+      }
+      saveSettings();
+    }
+    
+    // Place name settings (for backward compatibility)
+    let placeNameFontScale = appSettings.placeNameFontScale;
+    
+    // Expose settings to console
+    window.earthquakeAppSettings = {
+      setPlaceNameFontScale: function(scale) {
+        placeNameFontScale = scale;
+        updateSetting('placeNameFontScale', scale);
+        console.log('🏷️ Place name font scale set to:', scale);
+        if (scene) {
+          updatePlaceNameLanguage(); // Recreate with new scale
+        }
+      },
+      getPlaceNameFontScale: function() {
+        return placeNameFontScale;
+      },
+      getSettings: function() {
+        return { ...appSettings };
+      },
+      resetSettings: function() {
+        localStorage.removeItem('earthquakeAppSettings');
+        location.reload();
+      },
+      help: function() {
+        console.log(`
+🏷️ Earthquake App Console Commands:
+• earthquakeAppSettings.setPlaceNameFontScale(2.0) - Set font scale (default: 2.0)
+• earthquakeAppSettings.getPlaceNameFontScale() - Get current font scale
+• earthquakeAppSettings.getSettings() - Get all current settings
+• earthquakeAppSettings.resetSettings() - Reset to defaults and reload
+• earthquakeAppSettings.help() - Show this help
+
+Examples:
+  earthquakeAppSettings.setPlaceNameFontScale(1.5)  // Smaller text
+  earthquakeAppSettings.setPlaceNameFontScale(3.0)  // Larger text
+  earthquakeAppSettings.getSettings()               // View all settings
+        `);
+      }
+    };
+    
+    function initializeCalendar() {
+      console.log('📅 Initializing calendar...');
+      
+      // Set up navigation buttons
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function() {
+          currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+          updateSetting('currentCalendarDate', currentCalendarDate.toISOString());
+          generateCalendar();
+        });
+      }
+      
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+          currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+          updateSetting('currentCalendarDate', currentCalendarDate.toISOString());
+          generateCalendar();
+        });
+      }
+      
+      // Generate initial calendar
+      generateCalendar();
+      console.log('✅ Calendar initialized');
+    }
+    
+    function generateCalendar() {
+      console.log('📅 Generating calendar for', currentCalendarDate.getFullYear(), currentCalendarDate.getMonth() + 1);
+      
+      const year = currentCalendarDate.getFullYear();
+      const month = currentCalendarDate.getMonth();
+      
+      // Update month title
+      const monthTitle = document.getElementById('monthTitle');
+      const monthNames = {
+        ja: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+        en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+      };
+      
+      if (monthTitle) {
+        const currentLang = document.querySelector('.lang-btn.active')?.getAttribute('data-language') || 'ja';
+        monthTitle.textContent = `${monthNames[currentLang][month]} ${year}`;
+      }
+      
+      // Calculate dates
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDate = new Date(firstDay);
+      startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
+      
+      // Calculate daily earthquake counts from current filtered data
+      const dailyCounts = {};
+      if (window.currentEarthquakeData && window.currentEarthquakeData.length > 0) {
+        console.log('📊 Calculating daily counts from', window.currentEarthquakeData.length, 'earthquakes');
+        
+        window.currentEarthquakeData.forEach(eq => {
+          if (eq.datetime) {
+            const date = new Date(eq.datetime);
+            const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+            dailyCounts[dateStr] = (dailyCounts[dateStr] || 0) + 1;
+          }
+        });
+        
+        console.log('📊 Daily counts calculated:', Object.keys(dailyCounts).length, 'days with earthquakes');
+      } else {
+        console.log('⚠️ No earthquake data available for calendar');
+      }
+      
+      // Generate calendar grid
+      const calendarBody = document.getElementById('calendarBody');
+      if (calendarBody) {
+        calendarBody.innerHTML = '';
+        
+        let currentWeekDate = new Date(startDate);
+        
+        // Generate 6 weeks of calendar
+        for (let week = 0; week < 6; week++) {
+          const row = document.createElement('tr');
+          
+          for (let day = 0; day < 7; day++) {
+            const cell = document.createElement('td');
+            const cellDate = new Date(currentWeekDate);
+            const dayNumber = cellDate.getDate();
+            const dateStr = cellDate.toISOString().split('T')[0];
+            const count = dailyCounts[dateStr] || 0;
+            
+            // Create cell content
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'day-number';
+            dayDiv.textContent = dayNumber;
+            
+            const countDiv = document.createElement('div');
+            countDiv.className = 'earthquake-count';
+            countDiv.style.cssText = `
+              position: absolute;
+              bottom: 5px;
+              right: 8px;
+              font-size: 11px;
+              font-weight: bold;
+              color: ${count > 0 ? '#dc3545' : '#6c757d'};
+            `;
+            if (count > 0) {
+              countDiv.textContent = count;
+            }
+            
+            cell.appendChild(dayDiv);
+            cell.appendChild(countDiv);
+            
+            // Add classes for styling
+            if (cellDate.getMonth() !== month) {
+              cell.classList.add('other-month');
+              cell.style.color = '#ccc';
+            }
+            
+            if (isToday(cellDate)) {
+              cell.style.backgroundColor = '#e3f2fd';
+              cell.style.fontWeight = 'bold';
+            }
+            
+            if (count > 0) {
+              if (count <= 2) {
+                cell.style.backgroundColor = '#fff3cd'; // Light yellow
+              } else if (count <= 5) {
+                cell.style.backgroundColor = '#f8d7da'; // Light red
+              } else {
+                cell.style.backgroundColor = '#dc3545'; // Dark red
+                cell.style.color = 'white';
+              }
+            }
+            
+            cell.title = `${dateStr}: ${count} earthquakes`;
+            
+            // Add click handler to show earthquakes for this day
+            cell.addEventListener('click', function() {
+              showEarthquakesForDate(dateStr);
+            });
+            
+            row.appendChild(cell);
+            currentWeekDate.setDate(currentWeekDate.getDate() + 1);
+          }
+          
+          calendarBody.appendChild(row);
+        }
+        
+        console.log('✅ Calendar grid generated');
+      }
+    }
+    
+    function isToday(date) {
+      const today = new Date();
+      return date.toDateString() === today.toDateString();
+    }
+    
+    function showEarthquakesForDate(dateStr) {
+      console.log('📅 Showing earthquakes for date:', dateStr);
+      
+      if (!window.currentEarthquakeData) {
+        console.log('⚠️ No earthquake data available');
+        return;
+      }
+      
+      const earthquakesForDate = window.currentEarthquakeData.filter(eq => {
+        if (eq.datetime) {
+          const eqDate = new Date(eq.datetime).toISOString().split('T')[0];
+          return eqDate === dateStr;
+        }
+        return false;
+      });
+      
+      console.log(`📊 Found ${earthquakesForDate.length} earthquakes for ${dateStr}`);
+      
+      if (earthquakesForDate.length > 0) {
+        // Create regional summary
+        const regionSummary = createRegionalSummary(earthquakesForDate);
+        
+        // Switch to data table and filter by this date
+        const tableTab = document.querySelector('[data-tab="table"]');
+        if (tableTab) {
+          tableTab.click();
+        }
+        
+        // Update table with filtered data
+        updateTableWithData(earthquakesForDate);
+        
+        // Show enhanced status message with regional summary
+        const statusDiv = document.getElementById('statusMessage');
+        if (statusDiv) {
+          statusDiv.innerHTML = `
+            <strong>📅 ${dateStr} Earthquake Summary</strong><br>
+            <strong>Total: ${earthquakesForDate.length} events</strong><br>
+            ${regionSummary}
+          `;
+          statusDiv.className = 'status-message success';
+          statusDiv.style.display = 'block';
+          setTimeout(() => statusDiv.style.display = 'none', 8000);
+        }
+      } else {
+        // Show no data message
+        const statusDiv = document.getElementById('statusMessage');
+        if (statusDiv) {
+          statusDiv.innerHTML = `
+            <strong>📅 No earthquakes found for ${dateStr}</strong>
+          `;
+          statusDiv.className = 'status-message info';
+          statusDiv.style.display = 'block';
+          setTimeout(() => statusDiv.style.display = 'none', 3000);
+        }
+      }
+    }
+    
+    // Create regional summary for earthquakes
+    function createRegionalSummary(earthquakes) {
+      // Group earthquakes by region
+      const regionCounts = {};
+      const regionMagnitudes = {};
+      
+      earthquakes.forEach(eq => {
+        const region = eq.region_ja || eq.region_en || 'Unknown';
+        
+        if (!regionCounts[region]) {
+          regionCounts[region] = 0;
+          regionMagnitudes[region] = [];
+        }
+        regionCounts[region]++;
+        if (eq.magnitude) {
+          regionMagnitudes[region].push(eq.magnitude);
+        }
+      });
+      
+      // Sort regions by count (descending)
+      const sortedRegions = Object.entries(regionCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5); // Show top 5 regions
+      
+      // Create summary string
+      const summaryLines = sortedRegions.map(([region, count]) => {
+        const magnitudes = regionMagnitudes[region];
+        let magInfo = '';
+        if (magnitudes.length > 0) {
+          const maxMag = Math.max(...magnitudes);
+          const avgMag = magnitudes.reduce((a, b) => a + b, 0) / magnitudes.length;
+          magInfo = ` (Max: M${maxMag.toFixed(1)}, Avg: M${avgMag.toFixed(1)})`;
+        }
+        
+        // Shorten region names for display
+        const shortRegion = region.length > 12 ? region.substring(0, 12) + '...' : region;
+        return `• ${shortRegion}: ${count}${magInfo}`;
+      });
+      
+      return summaryLines.join('<br>');
+    }
+    
+    // Make functions global
+    window.selectEarthquake = selectEarthquake;
+    window.updateTableWithData = updateTableWithData;
+    window.deleteEarthquake = deleteEarthquake;
+    window.currentEarthquakeData = [];
+    window.init3DScene = init3DScene;
+    window.createEarthquakeSpheres = createEarthquakeSpheres;
+    window.initializeCalendar = initializeCalendar;
+    window.generateCalendar = generateCalendar;
+  </script>
+</body>
+</html>

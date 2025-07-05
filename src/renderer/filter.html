@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Filter Settings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .filter-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+    select, input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .range-inputs {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .range-inputs input {
+      flex: 1;
+    }
+    .range-inputs span {
+      color: #666;
+    }
+    .range-display {
+      text-align: center;
+      margin-top: 5px;
+      color: #007bff;
+      font-weight: bold;
+    }
+    .apply-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .apply-btn:hover {
+      background-color: #0056b3;
+    }
+    .reset-btn {
+      width: 100%;
+      padding: 8px;
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .reset-btn:hover {
+      background-color: #545b62;
+    }
+    .loading {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2 data-i18n-key="filter_title">Filter Settings</h2>
+    </div>
+    
+    <div class="filter-group">
+      <label for="regionSelect" data-i18n-key="region_filter">Region Filter:</label>
+      <select id="regionSelect">
+        <option value="all" data-i18n-key="all_regions">All Regions</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label data-i18n-key="magnitude_range">Magnitude Range:</label>
+      <div class="range-inputs">
+        <input type="number" id="magMin" min="0" max="10" step="0.1" value="0" placeholder="Min">
+        <span>-</span>
+        <input type="number" id="magMax" min="0" max="10" step="0.1" value="10" placeholder="Max">
+      </div>
+      <div class="range-display" id="rangeDisplay">0.0 - 10.0</div>
+    </div>
+    
+    <button class="apply-btn" id="applyBtn" data-i18n-key="apply_filter">Apply Filter</button>
+    <button class="reset-btn" id="resetBtn" data-i18n-key="reset_filter">Reset Filter</button>
+  </div>
+
+  <script src="./js/i18n.js"></script>
+  <script src="./js/progress.js"></script>
+  <script>
+    let currentLanguage = 'ja';
+    let availableRegions = ['all'];
+
+    function updateRangeDisplay() {
+      const minVal = parseFloat(document.getElementById('magMin').value);
+      const maxVal = parseFloat(document.getElementById('magMax').value);
+      document.getElementById('rangeDisplay').textContent = `${minVal.toFixed(1)} - ${maxVal.toFixed(1)}`;
+    }
+
+    function populateRegions(regions) {
+      const select = document.getElementById('regionSelect');
+      select.innerHTML = '<option value="all" data-i18n-key="all_regions">All Regions</option>';
+      
+      regions.filter(region => region !== 'all').forEach(region => {
+        const option = document.createElement('option');
+        option.value = region;
+        option.textContent = region;
+        select.appendChild(option);
+      });
+      
+      availableRegions = regions;
+    }
+
+    function applyFilter() {
+      const region = document.getElementById('regionSelect').value;
+      const magMin = parseFloat(document.getElementById('magMin').value);
+      const magMax = parseFloat(document.getElementById('magMax').value);
+      
+      if (magMin > magMax) {
+        alert('Minimum magnitude cannot be greater than maximum magnitude');
+        return;
+      }
+      
+      const filters = {
+        region: region,
+        magMin: magMin,
+        magMax: magMax
+      };
+      
+      window.api.send('filter-changed', filters);
+    }
+
+    function resetFilter() {
+      document.getElementById('regionSelect').value = 'all';
+      document.getElementById('magMin').value = '0';
+      document.getElementById('magMax').value = '10';
+      updateRangeDisplay();
+      applyFilter();
+    }
+
+    function updateLanguage(language) {
+      currentLanguage = language;
+      // Update i18n texts
+      document.querySelectorAll('[data-i18n-key]').forEach(element => {
+        const key = element.getAttribute('data-i18n-key');
+        if (translations[language] && translations[language][key]) {
+          element.textContent = translations[language][key];
+        }
+      });
+    }
+
+    // Event listeners
+    document.getElementById('magMin').addEventListener('input', updateRangeDisplay);
+    document.getElementById('magMax').addEventListener('input', updateRangeDisplay);
+    document.getElementById('applyBtn').addEventListener('click', applyFilter);
+    document.getElementById('resetBtn').addEventListener('click', resetFilter);
+
+    // Auto-apply filter on input change
+    document.getElementById('regionSelect').addEventListener('change', applyFilter);
+    document.getElementById('magMin').addEventListener('change', applyFilter);
+    document.getElementById('magMax').addEventListener('change', applyFilter);
+
+    // Listen for regions list
+    window.api.receive('regions-list', (regions) => {
+      populateRegions(regions);
+    });
+
+    // Listen for language changes
+    window.api.receive('language-changed', (language) => {
+      updateLanguage(language);
+    });
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeI18n();
+      updateRangeDisplay();
+      // Request regions list
+      window.api.send('get-regions');
+    });
+  </script>
+</body>
+</html>

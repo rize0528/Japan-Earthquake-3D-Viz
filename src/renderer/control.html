@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Control Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .control-group {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 6px;
+    }
+    .control-group h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      color: #495057;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .primary-btn {
+      background-color: #007bff;
+      color: white;
+    }
+    .primary-btn:hover {
+      background-color: #0056b3;
+    }
+    .secondary-btn {
+      background-color: #6c757d;
+      color: white;
+    }
+    .secondary-btn:hover {
+      background-color: #545b62;
+    }
+    .success-btn {
+      background-color: #28a745;
+      color: white;
+    }
+    .success-btn:hover {
+      background-color: #1e7e34;
+    }
+    .slider-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    .slider-value {
+      text-align: center;
+      color: #007bff;
+      font-weight: bold;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .language-group {
+      display: flex;
+      gap: 10px;
+    }
+    .language-btn {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #007bff;
+      border-radius: 4px;
+      background-color: white;
+      color: #007bff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .language-btn.active {
+      background-color: #007bff;
+      color: white;
+    }
+    .language-btn:hover {
+      background-color: #0056b3;
+      color: white;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      display: none;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2 data-i18n-key="control_title">Control Panel</h2>
+    </div>
+    
+    <div class="control-group">
+      <h3 data-i18n-key="data_controls">Data Controls</h3>
+      <div class="button-group">
+        <button class="primary-btn" id="refreshBtn" data-i18n-key="refresh">Refresh</button>
+        <button class="success-btn" id="updateBtn" data-i18n-key="check_updates">Check Updates</button>
+      </div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="autoUpdateCheck">
+        <label for="autoUpdateCheck" data-i18n-key="auto_update">Auto-update (30 min)</label>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h3 data-i18n-key="visual_controls">Visual Controls</h3>
+      <div class="slider-group">
+        <label for="sphereScale" data-i18n-key="sphere_size">Sphere Size:</label>
+        <input type="range" id="sphereScale" min="0.5" max="5" step="0.1" value="1">
+        <div class="slider-value" id="sphereScaleValue">1.0x</div>
+      </div>
+      <div class="slider-group">
+        <label for="sphereAlpha" data-i18n-key="sphere_transparency">Sphere Transparency:</label>
+        <input type="range" id="sphereAlpha" min="0.1" max="1" step="0.1" value="0.7">
+        <div class="slider-value" id="sphereAlphaValue">0.7</div>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h3 data-i18n-key="language_settings">Language Settings</h3>
+      <div class="language-group">
+        <button class="language-btn active" id="jaBtn" data-language="ja">日本語</button>
+        <button class="language-btn" id="enBtn" data-language="en">English</button>
+      </div>
+    </div>
+    
+    <div class="status" id="statusDiv"></div>
+  </div>
+
+  <script src="./js/i18n.js"></script>
+  <script src="./js/progress.js"></script>
+  <script>
+    let currentLanguage = 'ja';
+
+    function updateSliderDisplay() {
+      const scaleValue = document.getElementById('sphereScale').value;
+      const alphaValue = document.getElementById('sphereAlpha').value;
+      
+      document.getElementById('sphereScaleValue').textContent = `${parseFloat(scaleValue).toFixed(1)}x`;
+      document.getElementById('sphereAlphaValue').textContent = parseFloat(alphaValue).toFixed(1);
+    }
+
+    function showStatus(message, type = 'success') {
+      const statusDiv = document.getElementById('statusDiv');
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+      statusDiv.style.display = 'block';
+      
+      setTimeout(() => {
+        statusDiv.style.display = 'none';
+      }, 3000);
+    }
+
+    function updateLanguage(language) {
+      currentLanguage = language;
+      
+      // Update language buttons
+      document.querySelectorAll('.language-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById(language === 'ja' ? 'jaBtn' : 'enBtn').classList.add('active');
+      
+      // Update i18n texts
+      document.querySelectorAll('[data-i18n-key]').forEach(element => {
+        const key = element.getAttribute('data-i18n-key');
+        if (translations[language] && translations[language][key]) {
+          element.textContent = translations[language][key];
+        }
+      });
+    }
+
+    // Event listeners
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      window.api.send('refresh-view');
+      showStatus('Data refreshed');
+    });
+
+    document.getElementById('updateBtn').addEventListener('click', () => {
+      const btn = document.getElementById('updateBtn');
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+      window.api.send('update-data');
+      showStatus('Checking for updates...');
+    });
+
+    document.getElementById('autoUpdateCheck').addEventListener('change', (e) => {
+      window.api.send('toggle-auto-update', e.target.checked);
+      showStatus(e.target.checked ? 'Auto-update enabled' : 'Auto-update disabled');
+    });
+
+    document.getElementById('sphereScale').addEventListener('input', (e) => {
+      updateSliderDisplay();
+      window.api.send('sphere-scale', parseFloat(e.target.value));
+    });
+
+    document.getElementById('sphereAlpha').addEventListener('input', (e) => {
+      updateSliderDisplay();
+      window.api.send('sphere-alpha', parseFloat(e.target.value));
+    });
+
+    document.querySelectorAll('.language-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const language = btn.getAttribute('data-language');
+        window.api.send('language-changed', language);
+      });
+    });
+
+    // Listen for update completion
+    window.api.receive('update-complete', (newCount) => {
+      const btn = document.getElementById('updateBtn');
+      btn.disabled = false;
+      btn.textContent = 'Check Updates';
+      showStatus(`Update complete. Found ${newCount} new earthquakes.`);
+    });
+
+    // Listen for errors
+    window.api.receive('error', (error) => {
+      showStatus(error, 'error');
+    });
+
+    // Listen for language changes
+    window.api.receive('language-changed', (language) => {
+      updateLanguage(language);
+    });
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeI18n();
+      updateSliderDisplay();
+    });
+  </script>
+</body>
+</html>

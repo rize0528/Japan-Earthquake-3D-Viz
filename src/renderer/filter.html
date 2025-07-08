@@ -111,6 +111,16 @@
       <div class="range-display" id="rangeDisplay">0.0 - 10.0</div>
     </div>
     
+    <div class="filter-group">
+      <label data-i18n-key="time_range">Time Range:</label>
+      <div class="range-inputs">
+        <input type="datetime-local" id="timeStart" placeholder="Start time">
+        <span>-</span>
+        <input type="datetime-local" id="timeEnd" placeholder="End time">
+      </div>
+      <div class="range-display" id="timeRangeDisplay">All time periods</div>
+    </div>
+    
     <button class="apply-btn" id="applyBtn" data-i18n-key="apply_filter">Apply Filter</button>
     <button class="reset-btn" id="resetBtn" data-i18n-key="reset_filter">Reset Filter</button>
   </div>
@@ -125,6 +135,19 @@
       const minVal = parseFloat(document.getElementById('magMin').value);
       const maxVal = parseFloat(document.getElementById('magMax').value);
       document.getElementById('rangeDisplay').textContent = `${minVal.toFixed(1)} - ${maxVal.toFixed(1)}`;
+    }
+
+    function updateTimeRangeDisplay() {
+      const startVal = document.getElementById('timeStart').value;
+      const endVal = document.getElementById('timeEnd').value;
+      
+      if (startVal || endVal) {
+        const startText = startVal ? new Date(startVal).toLocaleString() : 'Any time';
+        const endText = endVal ? new Date(endVal).toLocaleString() : 'Any time';
+        document.getElementById('timeRangeDisplay').textContent = `${startText} - ${endText}`;
+      } else {
+        document.getElementById('timeRangeDisplay').textContent = 'All time periods';
+      }
     }
 
     function populateRegions(regions) {
@@ -145,16 +168,25 @@
       const region = document.getElementById('regionSelect').value;
       const magMin = parseFloat(document.getElementById('magMin').value);
       const magMax = parseFloat(document.getElementById('magMax').value);
+      const timeStart = document.getElementById('timeStart').value;
+      const timeEnd = document.getElementById('timeEnd').value;
       
       if (magMin > magMax) {
         alert('Minimum magnitude cannot be greater than maximum magnitude');
         return;
       }
       
+      if (timeStart && timeEnd && new Date(timeStart) > new Date(timeEnd)) {
+        alert('Start time cannot be later than end time');
+        return;
+      }
+      
       const filters = {
         region: region,
         magMin: magMin,
-        magMax: magMax
+        magMax: magMax,
+        timeStart: timeStart || null,
+        timeEnd: timeEnd || null
       };
       
       window.api.send('filter-changed', filters);
@@ -164,7 +196,10 @@
       document.getElementById('regionSelect').value = 'all';
       document.getElementById('magMin').value = '0';
       document.getElementById('magMax').value = '10';
+      document.getElementById('timeStart').value = '';
+      document.getElementById('timeEnd').value = '';
       updateRangeDisplay();
+      updateTimeRangeDisplay();
       applyFilter();
     }
 
@@ -182,6 +217,8 @@
     // Event listeners
     document.getElementById('magMin').addEventListener('input', updateRangeDisplay);
     document.getElementById('magMax').addEventListener('input', updateRangeDisplay);
+    document.getElementById('timeStart').addEventListener('input', updateTimeRangeDisplay);
+    document.getElementById('timeEnd').addEventListener('input', updateTimeRangeDisplay);
     document.getElementById('applyBtn').addEventListener('click', applyFilter);
     document.getElementById('resetBtn').addEventListener('click', resetFilter);
 
@@ -189,6 +226,8 @@
     document.getElementById('regionSelect').addEventListener('change', applyFilter);
     document.getElementById('magMin').addEventListener('change', applyFilter);
     document.getElementById('magMax').addEventListener('change', applyFilter);
+    document.getElementById('timeStart').addEventListener('change', applyFilter);
+    document.getElementById('timeEnd').addEventListener('change', applyFilter);
 
     // Listen for regions list
     window.api.receive('regions-list', (regions) => {
@@ -204,6 +243,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       initializeI18n();
       updateRangeDisplay();
+      updateTimeRangeDisplay();
       // Request regions list
       window.api.send('get-regions');
     });

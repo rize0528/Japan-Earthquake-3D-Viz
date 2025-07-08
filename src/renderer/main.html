@@ -661,6 +661,16 @@
             <div class="range-display" id="rangeDisplay">0.0 - 10.0</div>
           </div>
           
+          <div class="filter-group">
+            <label data-i18n-key="time_range">Time Range:</label>
+            <div class="range-inputs">
+              <input type="datetime-local" id="timeStart" placeholder="Start time">
+              <span>-</span>
+              <input type="datetime-local" id="timeEnd" placeholder="End time">
+            </div>
+            <div class="range-display" id="timeRangeDisplay">All time periods</div>
+          </div>
+          
           <button class="filter-btn" id="applyBtn" data-i18n-key="apply_filter">Apply Filter</button>
           <button class="filter-btn secondary" id="resetBtn" data-i18n-key="reset_filter">Reset Filter</button>
         </div>

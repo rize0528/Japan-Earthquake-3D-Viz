@@ -145,6 +145,8 @@ function setupFilterControls() {
   const regionSelect = document.getElementById('regionSelect');
   const magMin = document.getElementById('magMin');
   const magMax = document.getElementById('magMax');
+  const timeStart = document.getElementById('timeStart');
+  const timeEnd = document.getElementById('timeEnd');
   const applyBtn = document.getElementById('applyBtn');
   const resetBtn = document.getElementById('resetBtn');
   
@@ -154,20 +156,50 @@ function setupFilterControls() {
     document.getElementById('rangeDisplay').textContent = `${minVal.toFixed(1)} - ${maxVal.toFixed(1)}`;
   }
   
+  function updateTimeRangeDisplay() {
+    if (!timeStart || !timeEnd) return; // Time controls may not exist in main view
+    
+    const startVal = timeStart.value;
+    const endVal = timeEnd.value;
+    
+    if (startVal || endVal) {
+      const startText = startVal ? new Date(startVal).toLocaleString() : 'Any time';
+      const endText = endVal ? new Date(endVal).toLocaleString() : 'Any time';
+      const display = document.getElementById('timeRangeDisplay');
+      if (display) {
+        display.textContent = `${startText} - ${endText}`;
+      }
+    } else {
+      const display = document.getElementById('timeRangeDisplay');
+      if (display) {
+        display.textContent = 'All time periods';
+      }
+    }
+  }
+  
   function applyFilter() {
     const region = regionSelect.value;
     const magMinValue = parseFloat(magMin.value);
     const magMaxValue = parseFloat(magMax.value);
+    const timeStartValue = timeStart ? timeStart.value : null;
+    const timeEndValue = timeEnd ? timeEnd.value : null;
     
     if (magMinValue > magMaxValue) {
       showStatus('Minimum magnitude cannot be greater than maximum magnitude', 'error');
       return;
     }
     
+    if (timeStartValue && timeEndValue && new Date(timeStartValue) > new Date(timeEndValue)) {
+      showStatus('Start time cannot be later than end time', 'error');
+      return;
+    }
+    
     const filters = {
       region: region,
       magMin: magMinValue,
-      magMax: magMaxValue
+      magMax: magMaxValue,
+      timeStart: timeStartValue || null,
+      timeEnd: timeEndValue || null
     };
     
     window.api.send('filter-changed', filters);
@@ -177,13 +209,24 @@ function setupFilterControls() {
     regionSelect.value = 'all';
     magMin.value = '0';
     magMax.value = '10';
+    if (timeStart) timeStart.value = '';
+    if (timeEnd) timeEnd.value = '';
     updateRangeDisplay();
+    updateTimeRangeDisplay();
     applyFilter();
   }
   
   // Event listeners
   magMin.addEventListener('input', updateRangeDisplay);
   magMax.addEventListener('input', updateRangeDisplay);
+  if (timeStart) {
+    timeStart.addEventListener('input', updateTimeRangeDisplay);
+    timeStart.addEventListener('change', applyFilter);
+  }
+  if (timeEnd) {
+    timeEnd.addEventListener('input', updateTimeRangeDisplay);
+    timeEnd.addEventListener('change', applyFilter);
+  }
   applyBtn.addEventListener('click', applyFilter);
   resetBtn.addEventListener('click', resetFilter);
   
@@ -194,6 +237,7 @@ function setupFilterControls() {
   
   // Initialize
   updateRangeDisplay();
+  updateTimeRangeDisplay();
   
   // Request regions list
   window.api.send('get-regions');

@@ -9,7 +9,7 @@ let mainWindow;
 
 let earthquakeData = [];
 let filteredData = [];
-let currentFilters = { region: 'all', magMin: 0, magMax: 10 };
+let currentFilters = { region: 'all', magMin: 0, magMax: 10, timeStart: null, timeEnd: null };
 let sphereScale = 1;
 let sphereAlpha = 0.7;
 let currentLanguage = 'ja';
@@ -90,7 +90,24 @@ function applyFilters() {
                        eq.region_en.includes(currentFilters.region);
     const magMatch = eq.magnitude >= currentFilters.magMin && 
                      eq.magnitude <= currentFilters.magMax;
-    return regionMatch && magMatch;
+    
+    // Time range filtering
+    let timeMatch = true;
+    if (currentFilters.timeStart || currentFilters.timeEnd) {
+      const eqTime = new Date(eq.datetime);
+      
+      if (currentFilters.timeStart) {
+        const startTime = new Date(currentFilters.timeStart);
+        timeMatch = timeMatch && eqTime >= startTime;
+      }
+      
+      if (currentFilters.timeEnd) {
+        const endTime = new Date(currentFilters.timeEnd);
+        timeMatch = timeMatch && eqTime <= endTime;
+      }
+    }
+    
+    return regionMatch && magMatch && timeMatch;
   });
   
   // Send filtered data to main window

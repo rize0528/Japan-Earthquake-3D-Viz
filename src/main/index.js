@@ -84,6 +84,9 @@ function loadCachedData() {
 }
 
 function applyFilters() {
+  console.log('🔍 Applying filters:', currentFilters);
+  console.log('📊 Total earthquake data:', earthquakeData.length);
+  
   filteredData = earthquakeData.filter(eq => {
     const regionMatch = currentFilters.region === 'all' || 
                        eq.region_ja.includes(currentFilters.region) || 
@@ -109,6 +112,8 @@ function applyFilters() {
     
     return regionMatch && magMatch && timeMatch;
   });
+  
+  console.log('📊 Filtered data result:', filteredData.length, 'earthquakes');
   
   // Send filtered data to main window
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -826,6 +831,7 @@ function saveCacheData() {
 
 // IPC Event Listeners
 ipcMain.on('filter-changed', (event, filters) => {
+  console.log('🔍 Filter changed received:', filters);
   currentFilters = filters;
   applyFilters();
 });

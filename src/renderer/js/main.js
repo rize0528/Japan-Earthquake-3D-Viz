@@ -239,6 +239,19 @@ function setupFilterControls() {
   updateRangeDisplay();
   updateTimeRangeDisplay();
   
+  // Set default time range to last 24 hours for easier testing
+  if (timeStart && timeEnd) {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    // Format for datetime-local input: "YYYY-MM-DDTHH:MM"
+    timeStart.value = yesterday.toISOString().slice(0, 16);
+    timeEnd.value = now.toISOString().slice(0, 16);
+    
+    updateTimeRangeDisplay();
+    console.log('🕐 Set default time range to last 24 hours for testing');
+  }
+  
   // Request regions list
   window.api.send('get-regions');
 }

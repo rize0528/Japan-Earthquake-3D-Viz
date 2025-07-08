@@ -151,23 +151,30 @@ function setupFilterControls() {
   const resetBtn = document.getElementById('resetBtn');
   
   function updateRangeDisplay() {
-    const minVal = parseFloat(magMin.value);
-    const maxVal = parseFloat(magMax.value);
+    const magMinElement = document.getElementById('magMin');
+    const magMaxElement = document.getElementById('magMax');
+    if (!magMinElement || !magMaxElement) return;
+    
+    const minVal = parseFloat(magMinElement.value);
+    const maxVal = parseFloat(magMaxElement.value);
     document.getElementById('rangeDisplay').textContent = `${minVal.toFixed(1)} - ${maxVal.toFixed(1)}`;
   }
   
   function updateTimeRangeDisplay() {
     const display = document.getElementById('timeRangeDisplay');
-    if (!display) return; // No display element found
+    if (!display) return;
     
-    // Check if time controls exist (they may not exist in all views)
-    if (!timeStart || !timeEnd) {
+    // Get fresh references to the time controls
+    const timeStartElement = document.getElementById('timeStart');
+    const timeEndElement = document.getElementById('timeEnd');
+    
+    if (!timeStartElement || !timeEndElement) {
       display.textContent = 'All time periods';
       return;
     }
     
-    const startVal = timeStart.value;
-    const endVal = timeEnd.value;
+    const startVal = timeStartElement.value;
+    const endVal = timeEndElement.value;
     
     if (startVal || endVal) {
       const startText = startVal ? new Date(startVal).toLocaleString() : 'Any time';
@@ -180,11 +187,27 @@ function setupFilterControls() {
   
   function applyFilter() {
     const region = regionSelect.value;
-    const magMinValue = parseFloat(magMin.value);
-    const magMaxValue = parseFloat(magMax.value);
-    const timeStartValue = timeStart ? timeStart.value : null;
-    const timeEndValue = timeEnd ? timeEnd.value : null;
+    const magMinElement = document.getElementById('magMin');
+    const magMaxElement = document.getElementById('magMax');
+    const magMinValue = magMinElement ? parseFloat(magMinElement.value) : 0;
+    const magMaxValue = magMaxElement ? parseFloat(magMaxElement.value) : 10;
+    const timeStartElement = document.getElementById('timeStart');
+    const timeEndElement = document.getElementById('timeEnd');
+    const timeStartValue = timeStartElement ? timeStartElement.value : null;
+    const timeEndValue = timeEndElement ? timeEndElement.value : null;
     
+    console.log('🔧 Time elements found:', { 
+      timeStartElement: !!timeStartElement, 
+      timeEndElement: !!timeEndElement 
+    });
+    console.log('🔧 Raw time values:', { 
+      timeStartValue, 
+      timeEndValue 
+    });
+    console.log('🔧 Time values after processing:', {
+      timeStartProcessed: timeStartValue || null,
+      timeEndProcessed: timeEndValue || null
+    });
     console.log('🔧 Applying filter from UI:', {
       region, magMinValue, magMaxValue, timeStartValue, timeEndValue
     });
@@ -214,39 +237,60 @@ function setupFilterControls() {
       timeEnd: timeEndValue || null
     };
     
+    console.log('📤 Final filter object being sent:', JSON.stringify(filters, null, 2));
     console.log('📤 Sending filter to main process:', filters);
     window.api.send('filter-changed', filters);
   }
   
   function resetFilter() {
     regionSelect.value = 'all';
-    magMin.value = '0';
-    magMax.value = '10';
-    if (timeStart) timeStart.value = '';
-    if (timeEnd) timeEnd.value = '';
+    const magMinElement = document.getElementById('magMin');
+    const magMaxElement = document.getElementById('magMax');
+    if (magMinElement) magMinElement.value = '0';
+    if (magMaxElement) magMaxElement.value = '10';
+    const timeStartElement = document.getElementById('timeStart');
+    const timeEndElement = document.getElementById('timeEnd');
+    if (timeStartElement) timeStartElement.value = '';
+    if (timeEndElement) timeEndElement.value = '';
     updateRangeDisplay();
     updateTimeRangeDisplay();
     applyFilter();
   }
   
-  // Event listeners
-  magMin.addEventListener('input', updateRangeDisplay);
-  magMax.addEventListener('input', updateRangeDisplay);
+  // Event listeners - using the local variables since they're in scope
+  if (magMin) {
+    magMin.addEventListener('input', updateRangeDisplay);
+    magMin.addEventListener('change', applyFilter);
+  }
+  if (magMax) {
+    magMax.addEventListener('input', updateRangeDisplay);
+    magMax.addEventListener('change', applyFilter);
+  }
   if (timeStart) {
-    timeStart.addEventListener('input', updateTimeRangeDisplay);
-    timeStart.addEventListener('change', applyFilter);
+    timeStart.addEventListener('input', () => {
+      console.log('📅 timeStart input changed:', timeStart.value);
+      updateTimeRangeDisplay();
+    });
+    timeStart.addEventListener('change', () => {
+      console.log('📅 timeStart change event:', timeStart.value);
+      applyFilter();
+    });
   }
   if (timeEnd) {
-    timeEnd.addEventListener('input', updateTimeRangeDisplay);
-    timeEnd.addEventListener('change', applyFilter);
+    timeEnd.addEventListener('input', () => {
+      console.log('📅 timeEnd input changed:', timeEnd.value);
+      updateTimeRangeDisplay();
+    });
+    timeEnd.addEventListener('change', () => {
+      console.log('📅 timeEnd change event:', timeEnd.value);
+      applyFilter();
+    });
   }
   applyBtn.addEventListener('click', applyFilter);
   resetBtn.addEventListener('click', resetFilter);
   
-  // Auto-apply filter on input change
+  // Region filter
   regionSelect.addEventListener('change', applyFilter);
-  magMin.addEventListener('change', applyFilter);
-  magMax.addEventListener('change', applyFilter);
   
   // Initialize
   updateRangeDisplay();

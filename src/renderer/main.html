@@ -661,6 +661,16 @@
             <div class="range-display" id="rangeDisplay">0.0 - 10.0</div>
           </div>
           
+          <div class="filter-group">
+            <label data-i18n-key="time_range">Time Range:</label>
+            <div class="range-inputs">
+              <input type="datetime-local" id="timeStart" placeholder="Start time">
+              <span>-</span>
+              <input type="datetime-local" id="timeEnd" placeholder="End time">
+            </div>
+            <div class="range-display" id="timeRangeDisplay">All time periods</div>
+          </div>
+          
           <button class="filter-btn" id="applyBtn" data-i18n-key="apply_filter">Apply Filter</button>
           <button class="filter-btn secondary" id="resetBtn" data-i18n-key="reset_filter">Reset Filter</button>
         </div>
@@ -1261,27 +1271,45 @@
         magMax.addEventListener('change', applyFilters);
       }
       
+      // Add event listeners for time filters
+      const timeStart = document.getElementById('timeStart');
+      const timeEnd = document.getElementById('timeEnd');
+      if (timeStart) {
+        timeStart.addEventListener('change', applyFilters);
+      }
+      if (timeEnd) {
+        timeEnd.addEventListener('change', applyFilters);
+      }
+      
       function applyFilters() {
         const region = regionSelect ? regionSelect.value : 'all';
         const minMag = magMin ? parseFloat(magMin.value) : 0;
         const maxMag = magMax ? parseFloat(magMax.value) : 10;
+        const timeStart = document.getElementById('timeStart');
+        const timeEnd = document.getElementById('timeEnd');
+        const timeStartValue = timeStart ? timeStart.value || null : null;
+        const timeEndValue = timeEnd ? timeEnd.value || null : null;
         
-        console.log('🔍 Applying filters:', { region, minMag, maxMag });
+        console.log('🔍 Applying filters:', { region, minMag, maxMag, timeStartValue, timeEndValue });
         
         // Save filter settings
         updateSetting('filters.region', region);
         updateSetting('filters.magMin', minMag);
         updateSetting('filters.magMax', maxMag);
+        updateSetting('filters.timeStart', timeStartValue);
+        updateSetting('filters.timeEnd', timeEndValue);
         
         if (window.api) {
           window.api.send('filter-changed', {
             region: region,
             magMin: minMag,
-            magMax: maxMag
+            magMax: maxMag,
+            timeStart: timeStartValue,
+            timeEnd: timeEndValue
           });
         } else {
           // Apply filter locally if no API
-          applyLocalFilters(region, minMag, maxMag);
+          applyLocalFilters(region, minMag, maxMag, timeStartValue, timeEndValue);
         }
       }
       
@@ -1289,6 +1317,12 @@
         if (regionSelect) regionSelect.value = 'all';
         if (magMin) magMin.value = '0';
         if (magMax) magMax.value = '10';
+        
+        // Reset time filters
+        const timeStart = document.getElementById('timeStart');
+        const timeEnd = document.getElementById('timeEnd');
+        if (timeStart) timeStart.value = '';
+        if (timeEnd) timeEnd.value = '';
         
         // Update range display
         updateRangeDisplay();

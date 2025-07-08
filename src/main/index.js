@@ -9,7 +9,7 @@ let mainWindow;
 
 let earthquakeData = [];
 let filteredData = [];
-let currentFilters = { region: 'all', magMin: 0, magMax: 10 };
+let currentFilters = { region: 'all', magMin: 0, magMax: 10, timeStart: null, timeEnd: null };
 let sphereScale = 1;
 let sphereAlpha = 0.7;
 let currentLanguage = 'ja';
@@ -84,17 +84,48 @@ function loadCachedData() {
 }
 
 function applyFilters() {
+  console.log('🔍 Applying filters:', currentFilters);
+  console.log('📊 Total earthquake data:', earthquakeData.length);
+  
   filteredData = earthquakeData.filter(eq => {
     const regionMatch = currentFilters.region === 'all' || 
                        eq.region_ja.includes(currentFilters.region) || 
                        eq.region_en.includes(currentFilters.region);
     const magMatch = eq.magnitude >= currentFilters.magMin && 
                      eq.magnitude <= currentFilters.magMax;
-    return regionMatch && magMatch;
+    
+    // Time range filtering
+    let timeMatch = true;
+    if (currentFilters.timeStart || currentFilters.timeEnd) {
+      const eqTime = new Date(eq.datetime);
+      
+      if (currentFilters.timeStart) {
+        const startTime = new Date(currentFilters.timeStart);
+        timeMatch = timeMatch && eqTime >= startTime;
+      }
+      
+      if (currentFilters.timeEnd) {
+        const endTime = new Date(currentFilters.timeEnd);
+        timeMatch = timeMatch && eqTime <= endTime;
+      }
+    }
+    
+    return regionMatch && magMatch && timeMatch;
   });
+  
+  console.log('📊 Filtered data result:', filteredData.length, 'earthquakes');
+  
+  // Debug: Show first few filtered results when time filtering is active
+  if ((currentFilters.timeStart || currentFilters.timeEnd) && filteredData.length > 0) {
+    console.log('🔍 Sample filtered earthquakes:');
+    filteredData.slice(0, 3).forEach(eq => {
+      console.log(`  - ${eq.eventId}: ${eq.datetime} (${eq.region_ja})`);
+    });
+  }
   
   // Send filtered data to main window
   if (mainWindow && !mainWindow.isDestroyed()) {
+    console.log('📤 Sending filtered data to renderer:', filteredData.length, 'earthquakes');
     mainWindow.webContents.send('filtered-data', filteredData);
     mainWindow.webContents.send('daily-counts', calculateDailyCounts());
   }
@@ -809,6 +840,7 @@ function saveCacheData() {
 
 // IPC Event Listeners
 ipcMain.on('filter-changed', (event, filters) => {
+  console.log('🔍 Filter changed received:', filters);
   currentFilters = filters;
   applyFilters();
 });

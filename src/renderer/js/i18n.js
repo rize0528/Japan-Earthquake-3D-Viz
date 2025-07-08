@@ -22,6 +22,7 @@ const translations = {
     region_filter: '地域フィルター:',
     all_regions: '全ての地域',
     magnitude_range: 'マグニチュード範囲:',
+    time_range: '時間範囲:',
     apply_filter: 'フィルターを適用',
     reset_filter: 'フィルターをリセット',
     
@@ -105,6 +106,7 @@ const translations = {
     region_filter: 'Region Filter:',
     all_regions: 'All Regions',
     magnitude_range: 'Magnitude Range:',
+    time_range: 'Time Range:',
     apply_filter: 'Apply Filter',
     reset_filter: 'Reset Filter',
     

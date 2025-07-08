@@ -145,58 +145,161 @@ function setupFilterControls() {
   const regionSelect = document.getElementById('regionSelect');
   const magMin = document.getElementById('magMin');
   const magMax = document.getElementById('magMax');
+  const timeStart = document.getElementById('timeStart');
+  const timeEnd = document.getElementById('timeEnd');
   const applyBtn = document.getElementById('applyBtn');
   const resetBtn = document.getElementById('resetBtn');
   
   function updateRangeDisplay() {
-    const minVal = parseFloat(magMin.value);
-    const maxVal = parseFloat(magMax.value);
+    const magMinElement = document.getElementById('magMin');
+    const magMaxElement = document.getElementById('magMax');
+    if (!magMinElement || !magMaxElement) return;
+    
+    const minVal = parseFloat(magMinElement.value);
+    const maxVal = parseFloat(magMaxElement.value);
     document.getElementById('rangeDisplay').textContent = `${minVal.toFixed(1)} - ${maxVal.toFixed(1)}`;
+  }
+  
+  function updateTimeRangeDisplay() {
+    const display = document.getElementById('timeRangeDisplay');
+    if (!display) return;
+    
+    // Get fresh references to the time controls
+    const timeStartElement = document.getElementById('timeStart');
+    const timeEndElement = document.getElementById('timeEnd');
+    
+    if (!timeStartElement || !timeEndElement) {
+      display.textContent = 'All time periods';
+      return;
+    }
+    
+    const startVal = timeStartElement.value;
+    const endVal = timeEndElement.value;
+    
+    if (startVal || endVal) {
+      const startText = startVal ? new Date(startVal).toLocaleString() : 'Any time';
+      const endText = endVal ? new Date(endVal).toLocaleString() : 'Any time';
+      display.textContent = `${startText} - ${endText}`;
+    } else {
+      display.textContent = 'All time periods';
+    }
   }
   
   function applyFilter() {
     const region = regionSelect.value;
-    const magMinValue = parseFloat(magMin.value);
-    const magMaxValue = parseFloat(magMax.value);
+    const magMinElement = document.getElementById('magMin');
+    const magMaxElement = document.getElementById('magMax');
+    const magMinValue = magMinElement ? parseFloat(magMinElement.value) : 0;
+    const magMaxValue = magMaxElement ? parseFloat(magMaxElement.value) : 10;
+    const timeStartElement = document.getElementById('timeStart');
+    const timeEndElement = document.getElementById('timeEnd');
+    const timeStartValue = timeStartElement ? timeStartElement.value : null;
+    const timeEndValue = timeEndElement ? timeEndElement.value : null;
+    
+    console.log('🔧 Time elements found:', { 
+      timeStartElement: !!timeStartElement, 
+      timeEndElement: !!timeEndElement 
+    });
+    console.log('🔧 Raw time values:', { 
+      timeStartValue, 
+      timeEndValue 
+    });
+    console.log('🔧 Time values after processing:', {
+      timeStartProcessed: timeStartValue || null,
+      timeEndProcessed: timeEndValue || null
+    });
+    console.log('🔧 Applying filter from UI:', {
+      region, magMinValue, magMaxValue, timeStartValue, timeEndValue
+    });
+    
+    // Show filter details in status
+    let filterStatus = `Filters: Region=${region}, Mag=${magMinValue}-${magMaxValue}`;
+    if (timeStartValue || timeEndValue) {
+      filterStatus += `, Time=${timeStartValue || 'any'} to ${timeEndValue || 'any'}`;
+    }
+    showStatus(filterStatus, 'success');
     
     if (magMinValue > magMaxValue) {
       showStatus('Minimum magnitude cannot be greater than maximum magnitude', 'error');
       return;
     }
     
+    if (timeStartValue && timeEndValue && new Date(timeStartValue) > new Date(timeEndValue)) {
+      showStatus('Start time cannot be later than end time', 'error');
+      return;
+    }
+    
     const filters = {
       region: region,
       magMin: magMinValue,
-      magMax: magMaxValue
+      magMax: magMaxValue,
+      timeStart: timeStartValue || null,
+      timeEnd: timeEndValue || null
     };
     
+    console.log('📤 Final filter object being sent:', JSON.stringify(filters, null, 2));
+    console.log('📤 Sending filter to main process:', filters);
     window.api.send('filter-changed', filters);
   }
   
   function resetFilter() {
     regionSelect.value = 'all';
-    magMin.value = '0';
-    magMax.value = '10';
+    const magMinElement = document.getElementById('magMin');
+    const magMaxElement = document.getElementById('magMax');
+    if (magMinElement) magMinElement.value = '0';
+    if (magMaxElement) magMaxElement.value = '10';
+    const timeStartElement = document.getElementById('timeStart');
+    const timeEndElement = document.getElementById('timeEnd');
+    if (timeStartElement) timeStartElement.value = '';
+    if (timeEndElement) timeEndElement.value = '';
     updateRangeDisplay();
+    updateTimeRangeDisplay();
     applyFilter();
   }
   
-  // Event listeners
-  magMin.addEventListener('input', updateRangeDisplay);
-  magMax.addEventListener('input', updateRangeDisplay);
+  // Event listeners - using the local variables since they're in scope
+  if (magMin) {
+    magMin.addEventListener('input', updateRangeDisplay);
+    magMin.addEventListener('change', applyFilter);
+  }
+  if (magMax) {
+    magMax.addEventListener('input', updateRangeDisplay);
+    magMax.addEventListener('change', applyFilter);
+  }
+  if (timeStart) {
+    timeStart.addEventListener('input', () => {
+      console.log('📅 timeStart input changed:', timeStart.value);
+      updateTimeRangeDisplay();
+    });
+    timeStart.addEventListener('change', () => {
+      console.log('📅 timeStart change event:', timeStart.value);
+      applyFilter();
+    });
+  }
+  if (timeEnd) {
+    timeEnd.addEventListener('input', () => {
+      console.log('📅 timeEnd input changed:', timeEnd.value);
+      updateTimeRangeDisplay();
+    });
+    timeEnd.addEventListener('change', () => {
+      console.log('📅 timeEnd change event:', timeEnd.value);
+      applyFilter();
+    });
+  }
   applyBtn.addEventListener('click', applyFilter);
   resetBtn.addEventListener('click', resetFilter);
   
-  // Auto-apply filter on input change
+  // Region filter
   regionSelect.addEventListener('change', applyFilter);
-  magMin.addEventListener('change', applyFilter);
-  magMax.addEventListener('change', applyFilter);
   
   // Initialize
   updateRangeDisplay();
+  updateTimeRangeDisplay();
   
   // Request regions list
   window.api.send('get-regions');
+  
+  // No automatic testing - removed for production
 }
 
 // Control Panel Controls
@@ -374,8 +477,28 @@ function getMagnitudeClass(magnitude) {
 }
 
 function updateTable(data) {
+  console.log('🔄 updateTable called with', data.length, 'earthquakes');
+  
   currentData = data;
   const tbody = document.getElementById('tableBody');
+  
+  // Update visible count in the UI
+  const countElement = document.querySelector('.data-table-count');
+  if (!countElement) {
+    // Add count display if it doesn't exist
+    const tableContainer = document.querySelector('.table-container');
+    if (tableContainer) {
+      const countDiv = document.createElement('div');
+      countDiv.className = 'data-table-count';
+      countDiv.style.cssText = 'margin-bottom: 10px; font-weight: bold; color: #333;';
+      tableContainer.insertBefore(countDiv, tableContainer.firstChild);
+    }
+  }
+  
+  const countDisplay = document.querySelector('.data-table-count');
+  if (countDisplay) {
+    countDisplay.textContent = `Showing ${data.length} earthquake records`;
+  }
   
   if (!data || data.length === 0) {
     tbody.innerHTML = `
@@ -616,6 +739,8 @@ function getAgeColor(datetime) {
 }
 
 function createEarthquakeSpheres(data) {
+  console.log('🎨 createEarthquakeSpheres called with', data.length, 'earthquakes');
+  
   if (!scene) return; // Scene not initialized yet
   
   clearEarthquakeSpheres();
@@ -817,10 +942,28 @@ function updateLanguage(language) {
 
 // IPC Listeners
 function setupIpcListeners() {
+  console.log('📡 Setting up IPC listeners in renderer...');
+  console.log('📡 window.api available:', !!window.api);
+  
+  if (!window.api) {
+    console.error('❌ window.api is not available! Preload script issue.');
+    return;
+  }
+  
   // Data updates
   window.api.receive('filtered-data', (data) => {
+    console.log('📥 Received filtered data in renderer:', data.length, 'earthquakes');
+    if (data.length > 0) {
+      console.log('📥 Sample received earthquake:', data[0]);
+      console.log('📥 First 3 earthquake dates:', data.slice(0, 3).map(eq => eq.datetime));
+    }
+    
+    // Show in status message for user visibility
+    showStatus(`Received ${data.length} earthquake records (${new Date().toLocaleTimeString()})`, 'success');
+    
     updateTable(data);
     if (scene) {
+      console.log('🎨 Updating 3D spheres with filtered data');
       createEarthquakeSpheres(data);
     }
   });

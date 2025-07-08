@@ -157,7 +157,14 @@ function setupFilterControls() {
   }
   
   function updateTimeRangeDisplay() {
-    if (!timeStart || !timeEnd) return; // Time controls may not exist in main view
+    const display = document.getElementById('timeRangeDisplay');
+    if (!display) return; // No display element found
+    
+    // Check if time controls exist (they may not exist in all views)
+    if (!timeStart || !timeEnd) {
+      display.textContent = 'All time periods';
+      return;
+    }
     
     const startVal = timeStart.value;
     const endVal = timeEnd.value;
@@ -165,15 +172,9 @@ function setupFilterControls() {
     if (startVal || endVal) {
       const startText = startVal ? new Date(startVal).toLocaleString() : 'Any time';
       const endText = endVal ? new Date(endVal).toLocaleString() : 'Any time';
-      const display = document.getElementById('timeRangeDisplay');
-      if (display) {
-        display.textContent = `${startText} - ${endText}`;
-      }
+      display.textContent = `${startText} - ${endText}`;
     } else {
-      const display = document.getElementById('timeRangeDisplay');
-      if (display) {
-        display.textContent = 'All time periods';
-      }
+      display.textContent = 'All time periods';
     }
   }
   
@@ -183,6 +184,17 @@ function setupFilterControls() {
     const magMaxValue = parseFloat(magMax.value);
     const timeStartValue = timeStart ? timeStart.value : null;
     const timeEndValue = timeEnd ? timeEnd.value : null;
+    
+    console.log('🔧 Applying filter from UI:', {
+      region, magMinValue, magMaxValue, timeStartValue, timeEndValue
+    });
+    
+    // Show filter details in status
+    let filterStatus = `Filters: Region=${region}, Mag=${magMinValue}-${magMaxValue}`;
+    if (timeStartValue || timeEndValue) {
+      filterStatus += `, Time=${timeStartValue || 'any'} to ${timeEndValue || 'any'}`;
+    }
+    showStatus(filterStatus, 'success');
     
     if (magMinValue > magMaxValue) {
       showStatus('Minimum magnitude cannot be greater than maximum magnitude', 'error');
@@ -202,6 +214,7 @@ function setupFilterControls() {
       timeEnd: timeEndValue || null
     };
     
+    console.log('📤 Sending filter to main process:', filters);
     window.api.send('filter-changed', filters);
   }
   
@@ -239,21 +252,10 @@ function setupFilterControls() {
   updateRangeDisplay();
   updateTimeRangeDisplay();
   
-  // Set default time range to last 24 hours for easier testing
-  if (timeStart && timeEnd) {
-    const now = new Date();
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    
-    // Format for datetime-local input: "YYYY-MM-DDTHH:MM"
-    timeStart.value = yesterday.toISOString().slice(0, 16);
-    timeEnd.value = now.toISOString().slice(0, 16);
-    
-    updateTimeRangeDisplay();
-    console.log('🕐 Set default time range to last 24 hours for testing');
-  }
-  
   // Request regions list
   window.api.send('get-regions');
+  
+  // No automatic testing - removed for production
 }
 
 // Control Panel Controls
@@ -431,8 +433,28 @@ function getMagnitudeClass(magnitude) {
 }
 
 function updateTable(data) {
+  console.log('🔄 updateTable called with', data.length, 'earthquakes');
+  
   currentData = data;
   const tbody = document.getElementById('tableBody');
+  
+  // Update visible count in the UI
+  const countElement = document.querySelector('.data-table-count');
+  if (!countElement) {
+    // Add count display if it doesn't exist
+    const tableContainer = document.querySelector('.table-container');
+    if (tableContainer) {
+      const countDiv = document.createElement('div');
+      countDiv.className = 'data-table-count';
+      countDiv.style.cssText = 'margin-bottom: 10px; font-weight: bold; color: #333;';
+      tableContainer.insertBefore(countDiv, tableContainer.firstChild);
+    }
+  }
+  
+  const countDisplay = document.querySelector('.data-table-count');
+  if (countDisplay) {
+    countDisplay.textContent = `Showing ${data.length} earthquake records`;
+  }
   
   if (!data || data.length === 0) {
     tbody.innerHTML = `
@@ -673,6 +695,8 @@ function getAgeColor(datetime) {
 }
 
 function createEarthquakeSpheres(data) {
+  console.log('🎨 createEarthquakeSpheres called with', data.length, 'earthquakes');
+  
   if (!scene) return; // Scene not initialized yet
   
   clearEarthquakeSpheres();
@@ -874,10 +898,28 @@ function updateLanguage(language) {
 
 // IPC Listeners
 function setupIpcListeners() {
+  console.log('📡 Setting up IPC listeners in renderer...');
+  console.log('📡 window.api available:', !!window.api);
+  
+  if (!window.api) {
+    console.error('❌ window.api is not available! Preload script issue.');
+    return;
+  }
+  
   // Data updates
   window.api.receive('filtered-data', (data) => {
+    console.log('📥 Received filtered data in renderer:', data.length, 'earthquakes');
+    if (data.length > 0) {
+      console.log('📥 Sample received earthquake:', data[0]);
+      console.log('📥 First 3 earthquake dates:', data.slice(0, 3).map(eq => eq.datetime));
+    }
+    
+    // Show in status message for user visibility
+    showStatus(`Received ${data.length} earthquake records (${new Date().toLocaleTimeString()})`, 'success');
+    
     updateTable(data);
     if (scene) {
+      console.log('🎨 Updating 3D spheres with filtered data');
       createEarthquakeSpheres(data);
     }
   });

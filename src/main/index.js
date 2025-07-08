@@ -115,8 +115,17 @@ function applyFilters() {
   
   console.log('📊 Filtered data result:', filteredData.length, 'earthquakes');
   
+  // Debug: Show first few filtered results when time filtering is active
+  if ((currentFilters.timeStart || currentFilters.timeEnd) && filteredData.length > 0) {
+    console.log('🔍 Sample filtered earthquakes:');
+    filteredData.slice(0, 3).forEach(eq => {
+      console.log(`  - ${eq.eventId}: ${eq.datetime} (${eq.region_ja})`);
+    });
+  }
+  
   // Send filtered data to main window
   if (mainWindow && !mainWindow.isDestroyed()) {
+    console.log('📤 Sending filtered data to renderer:', filteredData.length, 'earthquakes');
     mainWindow.webContents.send('filtered-data', filteredData);
     mainWindow.webContents.send('daily-counts', calculateDailyCounts());
   }

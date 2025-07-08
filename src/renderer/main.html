@@ -111,6 +111,39 @@
       overflow: hidden;
     }
     
+    .sidebar-scrollable {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    
+    .sidebar-scrollable::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .sidebar-scrollable::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 4px;
+    }
+    
+    .sidebar-scrollable::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: 4px;
+      transition: background 0.3s ease;
+    }
+    
+    .sidebar-scrollable:hover::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    
+    .sidebar-scrollable:hover::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+    }
+    
+    .sidebar-scrollable::-webkit-scrollbar-thumb:hover {
+      background: #a1a1a1;
+    }
+    
     .main-content {
       flex: 1;
       background: white;
@@ -640,86 +673,88 @@
     <div class="content-container">
       <!-- Sidebar -->
       <aside class="sidebar">
-        <!-- Filter Section -->
-        <div class="filter-section">
-          <h3 data-i18n-key="filter_title">Filter Settings</h3>
-          
-          <div class="filter-group">
-            <label for="regionSelect" data-i18n-key="region_filter">Region Filter:</label>
-            <select id="regionSelect">
-              <option value="all" data-i18n-key="all_regions">All Regions</option>
-            </select>
-          </div>
-          
-          <div class="filter-group">
-            <label data-i18n-key="magnitude_range">Magnitude Range:</label>
-            <div class="range-inputs">
-              <input type="number" id="magMin" min="0" max="10" step="0.1" value="0" placeholder="Min">
-              <span>-</span>
-              <input type="number" id="magMax" min="0" max="10" step="0.1" value="10" placeholder="Max">
-            </div>
-            <div class="range-display" id="rangeDisplay">0.0 - 10.0</div>
-          </div>
-          
-          <div class="filter-group">
-            <label data-i18n-key="time_range">Time Range:</label>
-            <div class="range-inputs">
-              <input type="datetime-local" id="timeStart" placeholder="Start time">
-              <span>-</span>
-              <input type="datetime-local" id="timeEnd" placeholder="End time">
-            </div>
-            <div class="range-display" id="timeRangeDisplay">All time periods</div>
-          </div>
-          
-          <button class="filter-btn" id="applyBtn" data-i18n-key="apply_filter">Apply Filter</button>
-          <button class="filter-btn secondary" id="resetBtn" data-i18n-key="reset_filter">Reset Filter</button>
-        </div>
-
-        <!-- Control Section -->
-        <div class="control-section">
-          <h3 data-i18n-key="control_title">Controls</h3>
-          
-          <div class="control-group">
-            <h4 data-i18n-key="data_controls">Data Controls</h4>
+        <div class="sidebar-scrollable">
+          <!-- Filter Section -->
+          <div class="filter-section">
+            <h3 data-i18n-key="filter_title">Filter Settings</h3>
             
             <div class="filter-group">
-              <label for="historyRange">Historical Data Range:</label>
-              <select id="historyRange">
-                <option value="1">Last 1 day</option>
-                <option value="3">Last 3 days</option>
-                <option value="7" selected>Last 7 days</option>
-                <option value="14">Last 14 days</option>
-                <option value="30">Last 30 days</option>
-                <option value="90">Last 90 days</option>
-                <option value="365">Last 1 year</option>
+              <label for="regionSelect" data-i18n-key="region_filter">Region Filter:</label>
+              <select id="regionSelect">
+                <option value="all" data-i18n-key="all_regions">All Regions</option>
               </select>
             </div>
             
-            <div class="button-group">
-              <button class="btn btn-primary" id="refreshBtn" data-i18n-key="refresh">Refresh</button>
-              <button class="btn btn-success" id="updateBtn" data-i18n-key="check_updates">Update</button>
+            <div class="filter-group">
+              <label data-i18n-key="magnitude_range">Magnitude Range:</label>
+              <div class="range-inputs">
+                <input type="number" id="magMin" min="0" max="10" step="0.1" value="0" placeholder="Min">
+                <span>-</span>
+                <input type="number" id="magMax" min="0" max="10" step="0.1" value="10" placeholder="Max">
+              </div>
+              <div class="range-display" id="rangeDisplay">0.0 - 10.0</div>
             </div>
-            <div class="button-group">
-              <button class="btn" id="clearCacheBtn" style="background: #6c757d; color: white;" title="Clear all cached data and re-fetch from JMA">Clear Cache</button>
-              <button class="btn" id="fetchHistoryBtn" style="background: #17a2b8; color: white;" title="Fetch historical data based on selected range">Fetch History</button>
+            
+            <div class="filter-group">
+              <label data-i18n-key="time_range">Time Range:</label>
+              <div class="range-inputs">
+                <input type="datetime-local" id="timeStart" placeholder="Start time">
+                <span>-</span>
+                <input type="datetime-local" id="timeEnd" placeholder="End time">
+              </div>
+              <div class="range-display" id="timeRangeDisplay">All time periods</div>
             </div>
-            <div class="checkbox-group">
-              <input type="checkbox" id="autoUpdateCheck">
-              <label for="autoUpdateCheck" data-i18n-key="auto_update">Auto-update (30 min)</label>
-            </div>
+            
+            <button class="filter-btn" id="applyBtn" data-i18n-key="apply_filter">Apply Filter</button>
+            <button class="filter-btn secondary" id="resetBtn" data-i18n-key="reset_filter">Reset Filter</button>
           </div>
-          
-          <div class="control-group">
-            <h4 data-i18n-key="visual_controls">Visual Controls</h4>
-            <div class="slider-group">
-              <label for="sphereScale" data-i18n-key="sphere_size">Sphere Size:</label>
-              <input type="range" id="sphereScale" min="0.5" max="100" step="0.5" value="1">
-              <div class="slider-value" id="sphereScaleValue">1.0x</div>
+
+          <!-- Control Section -->
+          <div class="control-section">
+            <h3 data-i18n-key="control_title">Controls</h3>
+            
+            <div class="control-group">
+              <h4 data-i18n-key="data_controls">Data Controls</h4>
+              
+              <div class="filter-group">
+                <label for="historyRange">Historical Data Range:</label>
+                <select id="historyRange">
+                  <option value="1">Last 1 day</option>
+                  <option value="3">Last 3 days</option>
+                  <option value="7" selected>Last 7 days</option>
+                  <option value="14">Last 14 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="365">Last 1 year</option>
+                </select>
+              </div>
+              
+              <div class="button-group">
+                <button class="btn btn-primary" id="refreshBtn" data-i18n-key="refresh">Refresh</button>
+                <button class="btn btn-success" id="updateBtn" data-i18n-key="check_updates">Update</button>
+              </div>
+              <div class="button-group">
+                <button class="btn" id="clearCacheBtn" style="background: #6c757d; color: white;" title="Clear all cached data and re-fetch from JMA">Clear Cache</button>
+                <button class="btn" id="fetchHistoryBtn" style="background: #17a2b8; color: white;" title="Fetch historical data based on selected range">Fetch History</button>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="autoUpdateCheck">
+                <label for="autoUpdateCheck" data-i18n-key="auto_update">Auto-update (30 min)</label>
+              </div>
             </div>
-            <div class="slider-group">
-              <label for="sphereAlpha" data-i18n-key="sphere_transparency">Sphere Transparency:</label>
-              <input type="range" id="sphereAlpha" min="0.1" max="1" step="0.1" value="0.7">
-              <div class="slider-value" id="sphereAlphaValue">0.7</div>
+            
+            <div class="control-group">
+              <h4 data-i18n-key="visual_controls">Visual Controls</h4>
+              <div class="slider-group">
+                <label for="sphereScale" data-i18n-key="sphere_size">Sphere Size:</label>
+                <input type="range" id="sphereScale" min="0.5" max="100" step="0.5" value="1">
+                <div class="slider-value" id="sphereScaleValue">1.0x</div>
+              </div>
+              <div class="slider-group">
+                <label for="sphereAlpha" data-i18n-key="sphere_transparency">Sphere Transparency:</label>
+                <input type="range" id="sphereAlpha" min="0.1" max="1" step="0.1" value="0.7">
+                <div class="slider-value" id="sphereAlphaValue">0.7</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1265,20 +1300,36 @@
         regionSelect.addEventListener('change', applyFilters);
       }
       if (magMin) {
-        magMin.addEventListener('change', applyFilters);
+        magMin.addEventListener('change', function() {
+          updateRangeDisplay();
+          applyFilters();
+        });
+        magMin.addEventListener('input', updateRangeDisplay);
       }
       if (magMax) {
-        magMax.addEventListener('change', applyFilters);
+        magMax.addEventListener('change', function() {
+          updateRangeDisplay();
+          applyFilters();
+        });
+        magMax.addEventListener('input', updateRangeDisplay);
       }
       
       // Add event listeners for time filters
       const timeStart = document.getElementById('timeStart');
       const timeEnd = document.getElementById('timeEnd');
       if (timeStart) {
-        timeStart.addEventListener('change', applyFilters);
+        timeStart.addEventListener('change', function() {
+          updateTimeRangeDisplay();
+          applyFilters();
+        });
+        timeStart.addEventListener('input', updateTimeRangeDisplay);
       }
       if (timeEnd) {
-        timeEnd.addEventListener('change', applyFilters);
+        timeEnd.addEventListener('change', function() {
+          updateTimeRangeDisplay();
+          applyFilters();
+        });
+        timeEnd.addEventListener('input', updateTimeRangeDisplay);
       }
       
       function applyFilters() {
@@ -1352,16 +1403,52 @@
       }
       
       function updateRangeDisplay() {
-        const minVal = magMin ? parseFloat(magMin.value) : 0;
-        const maxVal = magMax ? parseFloat(magMax.value) : 10;
+        const magMinElement = document.getElementById('magMin');
+        const magMaxElement = document.getElementById('magMax');
+        const minVal = magMinElement ? parseFloat(magMinElement.value) : 0;
+        const maxVal = magMaxElement ? parseFloat(magMaxElement.value) : 10;
         const rangeDisplay = document.getElementById('rangeDisplay');
         if (rangeDisplay) {
           rangeDisplay.textContent = `${minVal.toFixed(1)} - ${maxVal.toFixed(1)}`;
         }
       }
       
-      // Initialize range display
-      updateRangeDisplay();
+      function updateTimeRangeDisplay() {
+        const timeStart = document.getElementById('timeStart');
+        const timeEnd = document.getElementById('timeEnd');
+        const timeRangeDisplay = document.getElementById('timeRangeDisplay');
+        
+        if (timeRangeDisplay) {
+          const startVal = timeStart ? timeStart.value : '';
+          const endVal = timeEnd ? timeEnd.value : '';
+          
+          if (startVal || endVal) {
+            const startText = startVal ? new Date(startVal).toLocaleString() : 'Any time';
+            const endText = endVal ? new Date(endVal).toLocaleString() : 'Any time';
+            timeRangeDisplay.textContent = `${startText} - ${endText}`;
+          } else {
+            timeRangeDisplay.textContent = 'All time periods';
+          }
+        }
+      }
+      
+      // Note: Range displays are initialized in applyLoadedSettings()
+      // to ensure they show the correct restored values
+      
+      // Fallback initialization after a delay to ensure displays are updated
+      setTimeout(() => {
+        // Only update if displays are still showing default values
+        const rangeDisplay = document.getElementById('rangeDisplay');
+        const timeRangeDisplay = document.getElementById('timeRangeDisplay');
+        
+        if (rangeDisplay && rangeDisplay.textContent === '0.0 - 10.0') {
+          updateRangeDisplay();
+        }
+        
+        if (timeRangeDisplay && timeRangeDisplay.textContent === 'All time periods') {
+          updateTimeRangeDisplay();
+        }
+      }, 500);
       
       console.log('✅ Basic functionality setup complete!');
       
@@ -2984,7 +3071,9 @@
       filters: {
         region: 'all',
         magMin: 0,
-        magMax: 10
+        magMax: 10,
+        timeStart: null,
+        timeEnd: null
       },
       currentCalendarDate: new Date().toISOString()
     };
@@ -3008,7 +3097,7 @@
       // Apply loaded settings after a short delay to ensure DOM is ready
       setTimeout(() => {
         applyLoadedSettings();
-      }, 100);
+      }, 200);
     }
     
     // Save settings to localStorage
@@ -3057,8 +3146,23 @@
         magMax.value = appSettings.filters.magMax;
       }
       
+      // Restore time range inputs
+      const timeStart = document.getElementById('timeStart');
+      const timeEnd = document.getElementById('timeEnd');
+      
+      if (timeStart && appSettings.filters.timeStart) {
+        timeStart.value = appSettings.filters.timeStart;
+      }
+      
+      if (timeEnd && appSettings.filters.timeEnd) {
+        timeEnd.value = appSettings.filters.timeEnd;
+      }
+      
       // Update range display
       updateRangeDisplay();
+      
+      // Update time range display
+      updateTimeRangeDisplay();
       
       // Apply language setting
       const langButtons = document.querySelectorAll('.lang-btn');

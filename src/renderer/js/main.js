@@ -131,6 +131,7 @@ function setupTabNavigation() {
         updateCalendar();
       } else if (targetTab === 'table') {
         // Ensure sorting is set up when table tab is accessed
+        console.log('📊 Data Table tab activated, setting up sorting...');
         setTimeout(() => {
           setupTableSorting();
         }, 50);
@@ -1257,8 +1258,38 @@ function applySortToNewData() {
   }
 }
 
+// Debug function to test table structure
+function debugTableStructure() {
+  console.log('🔍 DEBUG: Checking table structure...');
+  const dataTable = document.getElementById('dataTable');
+  console.log('📊 dataTable element:', dataTable);
+  
+  const sortableHeaders = document.querySelectorAll('.sortable-header');
+  console.log('📊 Found sortable headers:', sortableHeaders.length);
+  
+  sortableHeaders.forEach((header, index) => {
+    const column = header.getAttribute('data-sort');
+    console.log(`📊 Header ${index}: ${column}`, header);
+  });
+  
+  const tablePane = document.getElementById('table-pane');
+  console.log('📊 Table pane:', tablePane);
+  console.log('📊 Table pane classes:', tablePane ? tablePane.classList.toString() : 'not found');
+  
+  // Test direct click event
+  if (sortableHeaders.length > 0) {
+    console.log('🧪 Testing direct click on first header...');
+    const firstHeader = sortableHeaders[0];
+    const column = firstHeader.getAttribute('data-sort');
+    console.log('🖱️ Simulating click on:', column);
+    handleSort(column);
+  }
+}
+
 // Make functions available globally for onclick handlers
 window.selectEarthquake = selectEarthquake;
+window.debugTableStructure = debugTableStructure;
+window.setupTableSorting = setupTableSorting;
 
 // Initialize when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {

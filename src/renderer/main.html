@@ -3147,6 +3147,10 @@
         timeStart: null,
         timeEnd: null
       },
+      sort: {
+        column: 'datetime',
+        direction: 'desc'
+      },
       currentCalendarDate: new Date().toISOString()
     };
     
@@ -3248,6 +3252,17 @@
       // Restore calendar date
       if (appSettings.currentCalendarDate) {
         currentCalendarDate = new Date(appSettings.currentCalendarDate);
+      }
+      
+      // Apply sort settings
+      if (appSettings.sort && typeof sortState !== 'undefined') {
+        sortState.column = appSettings.sort.column || 'datetime';
+        sortState.direction = appSettings.sort.direction || 'desc';
+        
+        // Update visual indicators if elements exist
+        if (document.querySelector('.sortable-header')) {
+          updateSortVisuals();
+        }
       }
       
       console.log('✅ Applied loaded settings to UI');

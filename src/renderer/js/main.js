@@ -18,7 +18,7 @@ let terrainData = null;
 let currentDate = new Date();
 let dailyCounts = {};
 
-// Sorting variables
+// Sorting variables - will be initialized from settings
 let sortState = {
   column: 'datetime',
   direction: 'desc'
@@ -1056,6 +1056,12 @@ function setupTableSorting() {
     });
   });
   
+  // Initialize sort state from settings if available
+  if (typeof appSettings !== 'undefined' && appSettings.sort) {
+    sortState.column = appSettings.sort.column || 'datetime';
+    sortState.direction = appSettings.sort.direction || 'desc';
+  }
+  
   // Apply initial sort state
   updateSortVisuals();
 }
@@ -1070,6 +1076,14 @@ function handleSort(column) {
     // New column - default to ascending
     sortState.column = column;
     sortState.direction = 'asc';
+  }
+  
+  // Save sort state to settings
+  if (typeof updateSetting === 'function') {
+    updateSetting('sort', {
+      column: sortState.column,
+      direction: sortState.direction
+    });
   }
   
   // Sort the data

@@ -1007,8 +1007,115 @@
     
     function handleSortFallback(column) {
       console.log('🔄 Fallback sorting by column:', column);
-      // Basic sorting implementation
-      alert('Sorting by ' + column + ' - fallback function working!');
+      
+      // Get current earthquake data
+      const currentData = window.currentEarthquakeData || [];
+      if (currentData.length === 0) {
+        console.log('❌ No earthquake data available for sorting');
+        return;
+      }
+      
+      // Toggle sort direction
+      if (sortState.column === column) {
+        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortState.column = column;
+        sortState.direction = 'asc';
+      }
+      
+      console.log('📊 Sort state:', sortState);
+      
+      // Sort the data
+      const sortedData = [...currentData].sort((a, b) => {
+        let aVal, bVal;
+        
+        // Get the correct field values based on column
+        if (column === 'epicenter') {
+          aVal = a.region_ja || a.region_en || '';
+          bVal = b.region_ja || b.region_en || '';
+        } else {
+          aVal = a[column];
+          bVal = b[column];
+        }
+        
+        // Handle different data types
+        if (column === 'datetime') {
+          aVal = new Date(aVal);
+          bVal = new Date(bVal);
+        } else if (column === 'magnitude' || column === 'depth' || 
+                   column === 'latitude' || column === 'longitude') {
+          aVal = parseFloat(aVal);
+          bVal = parseFloat(bVal);
+        } else {
+          aVal = String(aVal).toLowerCase();
+          bVal = String(bVal).toLowerCase();
+        }
+        
+        let result = 0;
+        if (aVal < bVal) result = -1;
+        else if (aVal > bVal) result = 1;
+        
+        return sortState.direction === 'desc' ? -result : result;
+      });
+      
+      console.log('📊 Sorted data length:', sortedData.length);
+      console.log('📊 First 3 sorted items:', sortedData.slice(0, 3).map(item => ({
+        [column]: column === 'epicenter' ? (item.region_ja || item.region_en) : item[column],
+        datetime: item.datetime
+      })));
+      
+      // Update the table
+      updateTableWithSortedData(sortedData);
+      
+      // Update visual indicators
+      updateSortVisualsFallback();
+    }
+    
+    function updateTableWithSortedData(data) {
+      const tbody = document.getElementById('tableBody');
+      if (!tbody) {
+        console.log('❌ Table body not found');
+        return;
+      }
+      
+      console.log('📊 Updating table with sorted data:', data.length, 'rows');
+      
+      tbody.innerHTML = data.map((eq, index) => {
+        const datetime = new Date(eq.datetime).toLocaleString();
+        const epicenter = eq.region_ja || eq.region_en || 'Unknown';
+        
+        return `
+          <tr data-earthquake-index="${index}" onclick="selectEarthquake(${index})">
+            <td>${datetime}</td>
+            <td>${eq.latitude.toFixed(3)}</td>
+            <td>${eq.longitude.toFixed(3)}</td>
+            <td>${eq.depth}</td>
+            <td class="magnitude">${eq.magnitude}</td>
+            <td>${epicenter}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    function updateSortVisualsFallback() {
+      const sortableHeaders = document.querySelectorAll('.sortable-header');
+      
+      sortableHeaders.forEach(header => {
+        const column = header.getAttribute('data-sort');
+        const arrow = header.querySelector('.sort-arrow');
+        
+        if (column === sortState.column) {
+          header.classList.add('active');
+          if (arrow) {
+            arrow.textContent = sortState.direction === 'desc' ? '▼' : '▲';
+          }
+        } else {
+          header.classList.remove('active');
+          if (arrow) {
+            arrow.textContent = '▲';
+          }
+        }
+      });
     }
     
     // Test basic functionality

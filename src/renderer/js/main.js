@@ -529,6 +529,13 @@ function updateTable(data) {
     return;
   }
 
+  console.log('📊 Updating table with data:', data.length, 'rows');
+  console.log('📊 First 3 rows:', data.slice(0, 3).map(eq => ({
+    datetime: eq.datetime,
+    magnitude: eq.magnitude,
+    epicenter: currentLanguage === 'ja' ? eq.region_ja : eq.region_en
+  })));
+  
   tbody.innerHTML = data.map((eq, index) => `
     <tr data-earthquake-index="${index}" onclick="selectEarthquake(${index})">
       <td>${formatDateTime(eq.datetime)}</td>
@@ -1109,6 +1116,12 @@ function setupTableSorting() {
 
 function handleSort(column) {
   console.log('🔄 Sorting by column:', column);
+  console.log('📊 Current data length:', currentData.length);
+  
+  if (currentData.length === 0) {
+    console.log('❌ No data to sort');
+    return;
+  }
   
   if (sortState.column === column) {
     // Toggle direction if same column
@@ -1118,6 +1131,8 @@ function handleSort(column) {
     sortState.column = column;
     sortState.direction = 'asc';
   }
+  
+  console.log('📊 Sort state:', sortState);
   
   // Save sort state to settings
   if (typeof updateSetting === 'function') {
@@ -1143,6 +1158,11 @@ function handleSort(column) {
     
     return compareValues(aVal, bVal, sortState.direction);
   });
+  
+  console.log('📊 First 3 sorted items:', sortedData.slice(0, 3).map(item => ({
+    [column]: column === 'epicenter' ? (currentLanguage === 'ja' ? item.region_ja : item.region_en) : item[column],
+    datetime: item.datetime
+  })));
   
   // Mark as sorted data
   sortedData._isSorted = true;

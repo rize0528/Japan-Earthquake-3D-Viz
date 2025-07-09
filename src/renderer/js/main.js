@@ -1054,6 +1054,9 @@ function setupTableSorting() {
       const column = header.getAttribute('data-sort');
       handleSort(column);
     });
+    
+    // Add tooltips for better UX
+    header.setAttribute('title', t('click_to_sort'));
   });
   
   // Initialize sort state from settings if available
@@ -1088,7 +1091,19 @@ function handleSort(column) {
   
   // Sort the data
   const sortedData = [...currentData].sort((a, b) => {
-    return compareValues(a[column], b[column], sortState.direction);
+    let aVal, bVal;
+    
+    // Get the correct field values based on column
+    if (column === 'epicenter') {
+      // Use the appropriate language field for epicenter
+      aVal = currentLanguage === 'ja' ? a.region_ja : a.region_en;
+      bVal = currentLanguage === 'ja' ? b.region_ja : b.region_en;
+    } else {
+      aVal = a[column];
+      bVal = b[column];
+    }
+    
+    return compareValues(aVal, bVal, sortState.direction);
   });
   
   // Mark as sorted data
@@ -1116,7 +1131,7 @@ function compareValues(a, b, direction) {
     aVal = parseFloat(a);
     bVal = parseFloat(b);
   } else {
-    // String comparison for epicenter
+    // String comparison for other fields
     aVal = String(a).toLowerCase();
     bVal = String(b).toLowerCase();
   }
@@ -1154,7 +1169,33 @@ function updateSortVisuals() {
 
 function applySortToNewData() {
   if (currentData.length > 0) {
-    handleSort(sortState.column);
+    // Apply sort without changing the sort state or saving to settings
+    const sortedData = [...currentData].sort((a, b) => {
+      let aVal, bVal;
+      
+      // Get the correct field values based on column
+      if (sortState.column === 'epicenter') {
+        // Use the appropriate language field for epicenter
+        aVal = currentLanguage === 'ja' ? a.region_ja : a.region_en;
+        bVal = currentLanguage === 'ja' ? b.region_ja : b.region_en;
+      } else {
+        aVal = a[sortState.column];
+        bVal = b[sortState.column];
+      }
+      
+      return compareValues(aVal, bVal, sortState.direction);
+    });
+    
+    // Mark as sorted data
+    sortedData._isSorted = true;
+    
+    // Update table with sorted data
+    updateTable(sortedData);
+    
+    // Update visual indicators
+    updateSortVisuals();
+    
+    console.log('✅ Applied existing sort to new data:', sortState);
   }
 }
 

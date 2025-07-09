@@ -965,6 +965,11 @@
   <!-- Three.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   
+  <!-- Application JavaScript Files -->
+  <script src="js/i18n.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/main.js"></script>
+  
   <script>
     console.log('🔥 Inline script test - JavaScript is working!');
     
@@ -1009,6 +1014,16 @@
               // Initialize calendar when calendar tab is activated
               setTimeout(function() {
                 initializeCalendar();
+              }, 100);
+            } else if (targetTab === 'table') {
+              // Initialize table sorting when table tab is activated
+              console.log('📊 Table tab activated, setting up sorting...');
+              setTimeout(function() {
+                if (typeof setupTableSorting === 'function') {
+                  setupTableSorting();
+                } else {
+                  console.log('❌ setupTableSorting function not available');
+                }
               }, 100);
             }
           } else {

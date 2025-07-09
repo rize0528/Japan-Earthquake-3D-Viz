@@ -18,6 +18,12 @@ let terrainData = null;
 let currentDate = new Date();
 let dailyCounts = {};
 
+// Sorting variables - will be initialized from settings
+let sortState = {
+  column: 'datetime',
+  direction: 'desc'
+};
+
 const monthNames = {
   ja: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
   en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -45,6 +51,12 @@ function initializeApp() {
     
     console.log('📅 Setting up calendar controls...');
     setupCalendarControls();
+    
+    console.log('📊 Setting up table sorting...');
+    // Delay table sorting setup to ensure DOM is ready
+    setTimeout(() => {
+      setupTableSorting();
+    }, 100);
     
     console.log('📡 Setting up IPC listeners...');
     setupIpcListeners();
@@ -117,6 +129,12 @@ function setupTabNavigation() {
         setTimeout(init3DScene, 100);
       } else if (targetTab === 'calendar') {
         updateCalendar();
+      } else if (targetTab === 'table') {
+        // Ensure sorting is set up when table tab is accessed
+        console.log('📊 Data Table tab activated, setting up sorting...');
+        setTimeout(() => {
+          setupTableSorting();
+        }, 50);
       }
     });
   });
@@ -479,7 +497,10 @@ function getMagnitudeClass(magnitude) {
 function updateTable(data) {
   console.log('🔄 updateTable called with', data.length, 'earthquakes');
   
-  currentData = data;
+  // Only update currentData if this is not a sorted view
+  if (!data._isSorted) {
+    currentData = data;
+  }
   const tbody = document.getElementById('tableBody');
   
   // Update visible count in the UI
@@ -509,6 +530,13 @@ function updateTable(data) {
     return;
   }
 
+  console.log('📊 Updating table with data:', data.length, 'rows');
+  console.log('📊 First 3 rows:', data.slice(0, 3).map(eq => ({
+    datetime: eq.datetime,
+    magnitude: eq.magnitude,
+    epicenter: currentLanguage === 'ja' ? eq.region_ja : eq.region_en
+  })));
+  
   tbody.innerHTML = data.map((eq, index) => `
     <tr data-earthquake-index="${index}" onclick="selectEarthquake(${index})">
       <td>${formatDateTime(eq.datetime)}</td>
@@ -962,6 +990,12 @@ function setupIpcListeners() {
     showStatus(`Received ${data.length} earthquake records (${new Date().toLocaleTimeString()})`, 'success');
     
     updateTable(data);
+    
+    // Apply current sort to new data after a brief delay
+    setTimeout(() => {
+      applySortToNewData();
+    }, 10);
+    
     if (scene) {
       console.log('🎨 Updating 3D spheres with filtered data');
       createEarthquakeSpheres(data);
@@ -1027,8 +1061,235 @@ function setupIpcListeners() {
   });
 }
 
+// Table sorting functionality
+let tableSortingSetup = false;
+
+function setupTableSorting() {
+  if (tableSortingSetup) {
+    console.log('🔧 Table sorting already set up, skipping');
+    return;
+  }
+  
+  const sortableHeaders = document.querySelectorAll('.sortable-header');
+  console.log('🔧 setupTableSorting: Found', sortableHeaders.length, 'sortable headers');
+  
+  if (sortableHeaders.length === 0) {
+    console.log('🔧 No sortable headers found, will retry later');
+    return;
+  }
+  
+  // Use event delegation on the table instead of individual headers
+  const dataTable = document.getElementById('dataTable');
+  if (dataTable) {
+    dataTable.addEventListener('click', (e) => {
+      const header = e.target.closest('.sortable-header');
+      if (header) {
+        const column = header.getAttribute('data-sort');
+        console.log('🖱️ Header clicked:', column);
+        e.preventDefault();
+        e.stopPropagation();
+        handleSort(column);
+      }
+    });
+    
+    console.log('✅ Event delegation set up on data table');
+  }
+  
+  // Add tooltips for better UX
+  sortableHeaders.forEach((header, index) => {
+    const column = header.getAttribute('data-sort');
+    console.log(`🔧 Setting up header ${index}: ${column}`);
+    header.setAttribute('title', t('click_to_sort'));
+  });
+  
+  // Initialize sort state from settings if available
+  if (typeof appSettings !== 'undefined' && appSettings.sort) {
+    sortState.column = appSettings.sort.column || 'datetime';
+    sortState.direction = appSettings.sort.direction || 'desc';
+  }
+  
+  // Apply initial sort state
+  updateSortVisuals();
+  
+  tableSortingSetup = true;
+  console.log('✅ Table sorting setup complete');
+}
+
+function handleSort(column) {
+  console.log('🔄 Sorting by column:', column);
+  console.log('📊 Current data length:', currentData.length);
+  
+  if (currentData.length === 0) {
+    console.log('❌ No data to sort');
+    return;
+  }
+  
+  if (sortState.column === column) {
+    // Toggle direction if same column
+    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    // New column - default to ascending
+    sortState.column = column;
+    sortState.direction = 'asc';
+  }
+  
+  console.log('📊 Sort state:', sortState);
+  
+  // Save sort state to settings
+  if (typeof updateSetting === 'function') {
+    updateSetting('sort', {
+      column: sortState.column,
+      direction: sortState.direction
+    });
+  }
+  
+  // Sort the data
+  const sortedData = [...currentData].sort((a, b) => {
+    let aVal, bVal;
+    
+    // Get the correct field values based on column
+    if (column === 'epicenter') {
+      // Use the appropriate language field for epicenter
+      aVal = currentLanguage === 'ja' ? a.region_ja : a.region_en;
+      bVal = currentLanguage === 'ja' ? b.region_ja : b.region_en;
+    } else {
+      aVal = a[column];
+      bVal = b[column];
+    }
+    
+    return compareValues(aVal, bVal, sortState.direction);
+  });
+  
+  console.log('📊 First 3 sorted items:', sortedData.slice(0, 3).map(item => ({
+    [column]: column === 'epicenter' ? (currentLanguage === 'ja' ? item.region_ja : item.region_en) : item[column],
+    datetime: item.datetime
+  })));
+  
+  // Mark as sorted data
+  sortedData._isSorted = true;
+  
+  // Update table with sorted data
+  updateTable(sortedData);
+  
+  // Update visual indicators
+  updateSortVisuals();
+  
+  console.log('✅ Sort applied:', sortState);
+}
+
+function compareValues(a, b, direction) {
+  let aVal = a;
+  let bVal = b;
+  
+  // Handle different data types
+  if (sortState.column === 'datetime') {
+    aVal = new Date(a);
+    bVal = new Date(b);
+  } else if (sortState.column === 'magnitude' || sortState.column === 'depth' || 
+             sortState.column === 'latitude' || sortState.column === 'longitude') {
+    aVal = parseFloat(a);
+    bVal = parseFloat(b);
+  } else {
+    // String comparison for other fields
+    aVal = String(a).toLowerCase();
+    bVal = String(b).toLowerCase();
+  }
+  
+  let result = 0;
+  if (aVal < bVal) result = -1;
+  else if (aVal > bVal) result = 1;
+  
+  return direction === 'desc' ? -result : result;
+}
+
+function updateSortVisuals() {
+  const sortableHeaders = document.querySelectorAll('.sortable-header');
+  
+  sortableHeaders.forEach(header => {
+    const column = header.getAttribute('data-sort');
+    const indicator = header.querySelector('.sort-indicator');
+    const arrow = header.querySelector('.sort-arrow');
+    
+    if (column === sortState.column) {
+      header.classList.add('active');
+      if (sortState.direction === 'desc') {
+        header.classList.add('sort-desc');
+        arrow.textContent = '▼';
+      } else {
+        header.classList.remove('sort-desc');
+        arrow.textContent = '▲';
+      }
+    } else {
+      header.classList.remove('active', 'sort-desc');
+      arrow.textContent = '▲';
+    }
+  });
+}
+
+function applySortToNewData() {
+  if (currentData.length > 0) {
+    // Apply sort without changing the sort state or saving to settings
+    const sortedData = [...currentData].sort((a, b) => {
+      let aVal, bVal;
+      
+      // Get the correct field values based on column
+      if (sortState.column === 'epicenter') {
+        // Use the appropriate language field for epicenter
+        aVal = currentLanguage === 'ja' ? a.region_ja : a.region_en;
+        bVal = currentLanguage === 'ja' ? b.region_ja : b.region_en;
+      } else {
+        aVal = a[sortState.column];
+        bVal = b[sortState.column];
+      }
+      
+      return compareValues(aVal, bVal, sortState.direction);
+    });
+    
+    // Mark as sorted data
+    sortedData._isSorted = true;
+    
+    // Update table with sorted data
+    updateTable(sortedData);
+    
+    // Update visual indicators
+    updateSortVisuals();
+    
+    console.log('✅ Applied existing sort to new data:', sortState);
+  }
+}
+
+// Debug function to test table structure
+function debugTableStructure() {
+  console.log('🔍 DEBUG: Checking table structure...');
+  const dataTable = document.getElementById('dataTable');
+  console.log('📊 dataTable element:', dataTable);
+  
+  const sortableHeaders = document.querySelectorAll('.sortable-header');
+  console.log('📊 Found sortable headers:', sortableHeaders.length);
+  
+  sortableHeaders.forEach((header, index) => {
+    const column = header.getAttribute('data-sort');
+    console.log(`📊 Header ${index}: ${column}`, header);
+  });
+  
+  const tablePane = document.getElementById('table-pane');
+  console.log('📊 Table pane:', tablePane);
+  console.log('📊 Table pane classes:', tablePane ? tablePane.classList.toString() : 'not found');
+  
+  // Test direct click event
+  if (sortableHeaders.length > 0) {
+    console.log('🧪 Testing direct click on first header...');
+    const firstHeader = sortableHeaders[0];
+    const column = firstHeader.getAttribute('data-sort');
+    console.log('🖱️ Simulating click on:', column);
+    handleSort(column);
+  }
+}
+
 // Make functions available globally for onclick handlers
 window.selectEarthquake = selectEarthquake;
+window.debugTableStructure = debugTableStructure;
+window.setupTableSorting = setupTableSorting;
 
 // Initialize when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {

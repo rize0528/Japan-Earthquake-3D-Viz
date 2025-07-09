@@ -81,7 +81,13 @@ const translations = {
     // Welcome messages
     welcome_title: '3D地震可視化へようこそ',
     welcome_description: '上のタブを使用して、さまざまなビューで地震データを探索してください。',
-    welcome_instruction: 'データテーブルまたは3D表示タブから始めてください。'
+    welcome_instruction: 'データテーブルまたは3D表示タブから始めてください。',
+    
+    // Sort features
+    sort_ascending: '昇順',
+    sort_descending: '降順',
+    sort_by: 'ソート:',
+    click_to_sort: 'クリックでソート'
   },
   
   en: {
@@ -165,7 +171,13 @@ const translations = {
     // Welcome messages
     welcome_title: 'Welcome to 3D Earthquake Visualization',
     welcome_description: 'Use the tabs above to explore earthquake data in different views.',
-    welcome_instruction: 'Start by checking the Data Table or 3D View tabs.'
+    welcome_instruction: 'Start by checking the Data Table or 3D View tabs.',
+    
+    // Sort features
+    sort_ascending: 'Ascending',
+    sort_descending: 'Descending',
+    sort_by: 'Sort by:',
+    click_to_sort: 'Click to sort'
   }
 };
 
@@ -185,8 +197,21 @@ function updateLanguage(language) {
   document.querySelectorAll('[data-i18n-key]').forEach(element => {
     const key = element.getAttribute('data-i18n-key');
     if (translations[language] && translations[language][key]) {
-      element.textContent = translations[language][key];
+      // Check if this is a sortable header
+      const headerText = element.querySelector('.header-text');
+      if (headerText) {
+        // Update only the header text span for sortable headers
+        headerText.textContent = translations[language][key];
+      } else {
+        // Regular element - update textContent
+        element.textContent = translations[language][key];
+      }
     }
+  });
+  
+  // Update sortable header tooltips
+  document.querySelectorAll('.sortable-header').forEach(header => {
+    header.setAttribute('title', translations[language]['click_to_sort'] || 'Click to sort');
   });
 }
 

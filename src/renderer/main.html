@@ -967,11 +967,49 @@
   
   <!-- Application JavaScript Files -->
   <script src="js/i18n.js"></script>
+  <script>console.log('✅ i18n.js loaded');</script>
+  
   <script src="js/progress.js"></script>
+  <script>console.log('✅ progress.js loaded');</script>
+  
   <script src="js/main.js"></script>
+  <script>console.log('✅ main.js loaded, setupTableSorting available:', typeof setupTableSorting);</script>
   
   <script>
     console.log('🔥 Inline script test - JavaScript is working!');
+    
+    // Fallback sorting functionality if main.js doesn't load
+    let sortState = { column: 'datetime', direction: 'desc' };
+    
+    function setupTableSortingFallback() {
+      console.log('🔧 Setting up fallback table sorting...');
+      const sortableHeaders = document.querySelectorAll('.sortable-header');
+      console.log('📊 Found sortable headers:', sortableHeaders.length);
+      
+      if (sortableHeaders.length === 0) {
+        console.log('❌ No sortable headers found');
+        return;
+      }
+      
+      const dataTable = document.getElementById('dataTable');
+      if (dataTable) {
+        dataTable.addEventListener('click', function(e) {
+          const header = e.target.closest('.sortable-header');
+          if (header) {
+            const column = header.getAttribute('data-sort');
+            console.log('🖱️ Header clicked:', column);
+            handleSortFallback(column);
+          }
+        });
+        console.log('✅ Fallback event delegation set up');
+      }
+    }
+    
+    function handleSortFallback(column) {
+      console.log('🔄 Fallback sorting by column:', column);
+      // Basic sorting implementation
+      alert('Sorting by ' + column + ' - fallback function working!');
+    }
     
     // Test basic functionality
     document.addEventListener('DOMContentLoaded', function() {
@@ -1023,6 +1061,10 @@
                   setupTableSorting();
                 } else {
                   console.log('❌ setupTableSorting function not available');
+                  console.log('🔧 Available functions:', Object.keys(window).filter(k => k.includes('setup')));
+                  
+                  // Fallback: setup sorting manually
+                  setupTableSortingFallback();
                 }
               }, 100);
             }

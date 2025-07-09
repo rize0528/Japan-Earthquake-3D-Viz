@@ -1016,11 +1016,16 @@
       }
       
       // Toggle sort direction
+      const previousColumn = sortState.column;
+      const previousDirection = sortState.direction;
+      
       if (sortState.column === column) {
         sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+        console.log(`🔄 Toggling direction for ${column}: ${previousDirection} → ${sortState.direction}`);
       } else {
         sortState.column = column;
         sortState.direction = 'asc';
+        console.log(`🆕 New column ${column}: ${previousColumn} → ${column}, direction: ${sortState.direction}`);
       }
       
       console.log('📊 Sort state:', sortState);
@@ -1080,6 +1085,9 @@
       
       console.log('📊 Updating table with sorted data:', data.length, 'rows');
       
+      // Store the sorted data for later reference
+      window.currentSortedData = data;
+      
       // Helper function to get magnitude class
       function getMagnitudeClass(magnitude) {
         if (magnitude < 4) return 'mag-low';
@@ -1127,18 +1135,28 @@
     
     function updateSortVisualsFallback() {
       const sortableHeaders = document.querySelectorAll('.sortable-header');
+      console.log('🎨 Updating sort visuals for:', sortState);
       
       sortableHeaders.forEach(header => {
         const column = header.getAttribute('data-sort');
         const arrow = header.querySelector('.sort-arrow');
         
+        // Remove all existing classes
+        header.classList.remove('active', 'sort-desc');
+        
         if (column === sortState.column) {
           header.classList.add('active');
+          if (sortState.direction === 'desc') {
+            header.classList.add('sort-desc');
+          }
+          
           if (arrow) {
             arrow.textContent = sortState.direction === 'desc' ? '▼' : '▲';
+            console.log(`🎨 Set arrow for ${column}: ${arrow.textContent} (${sortState.direction})`);
+          } else {
+            console.log(`❌ No arrow element found for ${column}`);
           }
         } else {
-          header.classList.remove('active');
           if (arrow) {
             arrow.textContent = '▲';
           }

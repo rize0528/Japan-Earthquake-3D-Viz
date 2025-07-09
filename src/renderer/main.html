@@ -1080,18 +1080,46 @@
       
       console.log('📊 Updating table with sorted data:', data.length, 'rows');
       
+      // Helper function to get magnitude class
+      function getMagnitudeClass(magnitude) {
+        if (magnitude < 4) return 'mag-low';
+        if (magnitude < 6) return 'mag-medium';
+        return 'mag-high';
+      }
+      
+      // Helper function to format datetime
+      function formatDateTime(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleString();
+      }
+      
       tbody.innerHTML = data.map((eq, index) => {
-        const datetime = new Date(eq.datetime).toLocaleString();
+        const datetime = formatDateTime(eq.datetime);
         const epicenter = eq.region_ja || eq.region_en || 'Unknown';
+        const magnitudeClass = getMagnitudeClass(eq.magnitude);
+        
+        // Find the original index in the unsorted data for proper delete functionality
+        const originalIndex = window.currentEarthquakeData ? 
+          window.currentEarthquakeData.findIndex(original => 
+            original.datetime === eq.datetime && 
+            original.latitude === eq.latitude && 
+            original.longitude === eq.longitude &&
+            original.magnitude === eq.magnitude
+          ) : index;
         
         return `
-          <tr data-earthquake-index="${index}" onclick="selectEarthquake(${index})">
+          <tr data-earthquake-index="${originalIndex}" onclick="selectEarthquake(${originalIndex})">
             <td>${datetime}</td>
             <td>${eq.latitude.toFixed(3)}</td>
             <td>${eq.longitude.toFixed(3)}</td>
             <td>${eq.depth}</td>
-            <td class="magnitude">${eq.magnitude}</td>
+            <td class="magnitude ${magnitudeClass}">${eq.magnitude}</td>
             <td>${epicenter}</td>
+            <td>
+              <button class="delete-btn" onclick="event.stopPropagation(); deleteEarthquake(${originalIndex});">
+                Delete
+              </button>
+            </td>
           </tr>
         `;
       }).join('');

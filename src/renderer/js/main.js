@@ -53,7 +53,10 @@ function initializeApp() {
     setupCalendarControls();
     
     console.log('📊 Setting up table sorting...');
-    setupTableSorting();
+    // Delay table sorting setup to ensure DOM is ready
+    setTimeout(() => {
+      setupTableSorting();
+    }, 100);
     
     console.log('📡 Setting up IPC listeners...');
     setupIpcListeners();
@@ -126,6 +129,11 @@ function setupTabNavigation() {
         setTimeout(init3DScene, 100);
       } else if (targetTab === 'calendar') {
         updateCalendar();
+      } else if (targetTab === 'table') {
+        // Ensure sorting is set up when table tab is accessed
+        setTimeout(() => {
+          setupTableSorting();
+        }, 50);
       }
     });
   });
@@ -1046,16 +1054,43 @@ function setupIpcListeners() {
 }
 
 // Table sorting functionality
+let tableSortingSetup = false;
+
 function setupTableSorting() {
-  const sortableHeaders = document.querySelectorAll('.sortable-header');
+  if (tableSortingSetup) {
+    console.log('🔧 Table sorting already set up, skipping');
+    return;
+  }
   
-  sortableHeaders.forEach(header => {
-    header.addEventListener('click', (e) => {
-      const column = header.getAttribute('data-sort');
-      handleSort(column);
+  const sortableHeaders = document.querySelectorAll('.sortable-header');
+  console.log('🔧 setupTableSorting: Found', sortableHeaders.length, 'sortable headers');
+  
+  if (sortableHeaders.length === 0) {
+    console.log('🔧 No sortable headers found, will retry later');
+    return;
+  }
+  
+  // Use event delegation on the table instead of individual headers
+  const dataTable = document.getElementById('dataTable');
+  if (dataTable) {
+    dataTable.addEventListener('click', (e) => {
+      const header = e.target.closest('.sortable-header');
+      if (header) {
+        const column = header.getAttribute('data-sort');
+        console.log('🖱️ Header clicked:', column);
+        e.preventDefault();
+        e.stopPropagation();
+        handleSort(column);
+      }
     });
     
-    // Add tooltips for better UX
+    console.log('✅ Event delegation set up on data table');
+  }
+  
+  // Add tooltips for better UX
+  sortableHeaders.forEach((header, index) => {
+    const column = header.getAttribute('data-sort');
+    console.log(`🔧 Setting up header ${index}: ${column}`);
     header.setAttribute('title', t('click_to_sort'));
   });
   
@@ -1067,6 +1102,9 @@ function setupTableSorting() {
   
   // Apply initial sort state
   updateSortVisuals();
+  
+  tableSortingSetup = true;
+  console.log('✅ Table sorting setup complete');
 }
 
 function handleSort(column) {

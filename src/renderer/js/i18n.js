@@ -185,7 +185,15 @@ function updateLanguage(language) {
   document.querySelectorAll('[data-i18n-key]').forEach(element => {
     const key = element.getAttribute('data-i18n-key');
     if (translations[language] && translations[language][key]) {
-      element.textContent = translations[language][key];
+      // Check if this is a sortable header
+      const headerText = element.querySelector('.header-text');
+      if (headerText) {
+        // Update only the header text span for sortable headers
+        headerText.textContent = translations[language][key];
+      } else {
+        // Regular element - update textContent
+        element.textContent = translations[language][key];
+      }
     }
   });
 }

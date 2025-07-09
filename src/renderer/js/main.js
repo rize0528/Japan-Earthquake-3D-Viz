@@ -18,6 +18,12 @@ let terrainData = null;
 let currentDate = new Date();
 let dailyCounts = {};
 
+// Sorting variables
+let sortState = {
+  column: 'datetime',
+  direction: 'desc'
+};
+
 const monthNames = {
   ja: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
   en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -45,6 +51,9 @@ function initializeApp() {
     
     console.log('📅 Setting up calendar controls...');
     setupCalendarControls();
+    
+    console.log('📊 Setting up table sorting...');
+    setupTableSorting();
     
     console.log('📡 Setting up IPC listeners...');
     setupIpcListeners();
@@ -479,7 +488,10 @@ function getMagnitudeClass(magnitude) {
 function updateTable(data) {
   console.log('🔄 updateTable called with', data.length, 'earthquakes');
   
-  currentData = data;
+  // Only update currentData if this is not a sorted view
+  if (!data._isSorted) {
+    currentData = data;
+  }
   const tbody = document.getElementById('tableBody');
   
   // Update visible count in the UI
@@ -962,6 +974,12 @@ function setupIpcListeners() {
     showStatus(`Received ${data.length} earthquake records (${new Date().toLocaleTimeString()})`, 'success');
     
     updateTable(data);
+    
+    // Apply current sort to new data after a brief delay
+    setTimeout(() => {
+      applySortToNewData();
+    }, 10);
+    
     if (scene) {
       console.log('🎨 Updating 3D spheres with filtered data');
       createEarthquakeSpheres(data);
@@ -1025,6 +1043,105 @@ function setupIpcListeners() {
   window.api.receive('error', (error) => {
     showStatus(error, 'error');
   });
+}
+
+// Table sorting functionality
+function setupTableSorting() {
+  const sortableHeaders = document.querySelectorAll('.sortable-header');
+  
+  sortableHeaders.forEach(header => {
+    header.addEventListener('click', (e) => {
+      const column = header.getAttribute('data-sort');
+      handleSort(column);
+    });
+  });
+  
+  // Apply initial sort state
+  updateSortVisuals();
+}
+
+function handleSort(column) {
+  console.log('🔄 Sorting by column:', column);
+  
+  if (sortState.column === column) {
+    // Toggle direction if same column
+    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    // New column - default to ascending
+    sortState.column = column;
+    sortState.direction = 'asc';
+  }
+  
+  // Sort the data
+  const sortedData = [...currentData].sort((a, b) => {
+    return compareValues(a[column], b[column], sortState.direction);
+  });
+  
+  // Mark as sorted data
+  sortedData._isSorted = true;
+  
+  // Update table with sorted data
+  updateTable(sortedData);
+  
+  // Update visual indicators
+  updateSortVisuals();
+  
+  console.log('✅ Sort applied:', sortState);
+}
+
+function compareValues(a, b, direction) {
+  let aVal = a;
+  let bVal = b;
+  
+  // Handle different data types
+  if (sortState.column === 'datetime') {
+    aVal = new Date(a);
+    bVal = new Date(b);
+  } else if (sortState.column === 'magnitude' || sortState.column === 'depth' || 
+             sortState.column === 'latitude' || sortState.column === 'longitude') {
+    aVal = parseFloat(a);
+    bVal = parseFloat(b);
+  } else {
+    // String comparison for epicenter
+    aVal = String(a).toLowerCase();
+    bVal = String(b).toLowerCase();
+  }
+  
+  let result = 0;
+  if (aVal < bVal) result = -1;
+  else if (aVal > bVal) result = 1;
+  
+  return direction === 'desc' ? -result : result;
+}
+
+function updateSortVisuals() {
+  const sortableHeaders = document.querySelectorAll('.sortable-header');
+  
+  sortableHeaders.forEach(header => {
+    const column = header.getAttribute('data-sort');
+    const indicator = header.querySelector('.sort-indicator');
+    const arrow = header.querySelector('.sort-arrow');
+    
+    if (column === sortState.column) {
+      header.classList.add('active');
+      if (sortState.direction === 'desc') {
+        header.classList.add('sort-desc');
+        arrow.textContent = '▼';
+      } else {
+        header.classList.remove('sort-desc');
+        arrow.textContent = '▲';
+      }
+    } else {
+      header.classList.remove('active', 'sort-desc');
+      arrow.textContent = '▲';
+    }
+  });
+}
+
+function applySortToNewData() {
+  if (currentData.length > 0) {
+    handleSort(sortState.column);
+  }
 }
 
 // Make functions available globally for onclick handlers

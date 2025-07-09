@@ -382,6 +382,48 @@
       z-index: 1;
     }
     
+    .sortable-header {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 20px;
+      transition: background-color 0.2s;
+    }
+    
+    .sortable-header:hover {
+      background-color: #e9ecef;
+    }
+    
+    .sortable-header.active {
+      background-color: #dee2e6;
+    }
+    
+    .sort-indicator {
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.3;
+      transition: opacity 0.2s;
+      font-size: 12px;
+    }
+    
+    .sortable-header:hover .sort-indicator {
+      opacity: 0.6;
+    }
+    
+    .sortable-header.active .sort-indicator {
+      opacity: 1;
+    }
+    
+    .sort-arrow {
+      transition: transform 0.2s;
+    }
+    
+    .sort-desc .sort-arrow {
+      transform: rotate(180deg);
+    }
+    
     .data-table tbody tr {
       cursor: pointer;
       pointer-events: auto;
@@ -782,12 +824,42 @@
             <table class="data-table" id="dataTable">
               <thead>
                 <tr>
-                  <th data-i18n-key="datetime">Date/Time</th>
-                  <th data-i18n-key="latitude">Latitude</th>
-                  <th data-i18n-key="longitude">Longitude</th>
-                  <th data-i18n-key="depth">Depth (km)</th>
-                  <th data-i18n-key="magnitude">Magnitude</th>
-                  <th data-i18n-key="epicenter">Epicenter</th>
+                  <th class="sortable-header" data-sort="datetime" data-i18n-key="datetime">
+                    <span class="header-text">Date/Time</span>
+                    <span class="sort-indicator" id="sort-datetime">
+                      <i class="sort-arrow">▲</i>
+                    </span>
+                  </th>
+                  <th class="sortable-header" data-sort="latitude" data-i18n-key="latitude">
+                    <span class="header-text">Latitude</span>
+                    <span class="sort-indicator" id="sort-latitude">
+                      <i class="sort-arrow">▲</i>
+                    </span>
+                  </th>
+                  <th class="sortable-header" data-sort="longitude" data-i18n-key="longitude">
+                    <span class="header-text">Longitude</span>
+                    <span class="sort-indicator" id="sort-longitude">
+                      <i class="sort-arrow">▲</i>
+                    </span>
+                  </th>
+                  <th class="sortable-header" data-sort="depth" data-i18n-key="depth">
+                    <span class="header-text">Depth (km)</span>
+                    <span class="sort-indicator" id="sort-depth">
+                      <i class="sort-arrow">▲</i>
+                    </span>
+                  </th>
+                  <th class="sortable-header" data-sort="magnitude" data-i18n-key="magnitude">
+                    <span class="header-text">Magnitude</span>
+                    <span class="sort-indicator" id="sort-magnitude">
+                      <i class="sort-arrow">▲</i>
+                    </span>
+                  </th>
+                  <th class="sortable-header" data-sort="epicenter" data-i18n-key="epicenter">
+                    <span class="header-text">Epicenter</span>
+                    <span class="sort-indicator" id="sort-epicenter">
+                      <i class="sort-arrow">▲</i>
+                    </span>
+                  </th>
                   <th>Actions</th>
                 </tr>
               </thead>
